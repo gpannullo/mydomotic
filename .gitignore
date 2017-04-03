@@ -1,1 +1,7 @@
 .DS_Store
+*.db
+*.db-*
+.env/
+.idea
+*/*.cpp
+*/*.h
