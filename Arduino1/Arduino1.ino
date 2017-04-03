@@ -14,7 +14,7 @@ IPAddress server_mqtt(192, 168, 10, 92);
 IPAddress ip(192, 168, 10, 99);
 //MAC ADDRESS DELLA SCHEDA ETHERNET
 byte mac[]    = {  0xDE, 0xED, 0xBA, 0x00, 0x00, 0x01 };
-bool DEBUG_SERIAL = false;
+bool DEBUG_SERIAL = true;
 /************************************************************************************************/
 /************************************************************************************************/
 /************************************************************************************************/
@@ -62,7 +62,7 @@ MyDomotic mydomotic_obj [] {
   MyDomotic("Tapparella 6 CHIUDI", ArduinoHost, 43, 42, 40000, 40),    //RELE 12 DW  //TAPPARELLA 6
   MyDomotic("Tapparella 7 APRI", ArduinoHost, 45, 44, 40000, 46),      //RELE 13 UP  //TAPPARELLA 7
   MyDomotic("Tapparella 7 CHIUDI", ArduinoHost, 47, 46, 40000, 44),    //RELE 14 DW  //TAPPARELLA 7
-  MyDomotic("Tapparella 8 APRI", ArduinoHost, 49, 48, 40000, 50),      //RELE 15 UP  //TAPPARELLA 8
+  MyDomotic("Tapparella 8 APRI", ArduinoHost, 49, 48, 40000, 19),      //RELE 15 UP  //TAPPARELLA 8
   MyDomotic("Tapparella 8 CHIUDI", ArduinoHost, 51, 19, 40000, 48),    //RELE 16 DW  //TAPPARELLA 8
 };
 /************************************************************************************************/

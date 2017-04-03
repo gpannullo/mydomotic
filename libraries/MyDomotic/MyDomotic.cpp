@@ -25,7 +25,7 @@ MyDomotic::MyDomotic(String label, String ArduinoHost, int btn, int led, long pe
     this->btn = btn;
     this->led = led;
     this->period = period;
-    this->type_object = "SWITCH_TIME";
+    this->type_object = "SWITCH";
     this->status_led = "";
     this->label = label;
     this->ArduinoHost = ArduinoHost;
@@ -115,7 +115,7 @@ void MyDomotic::check_btn_state(void)
 void MyDomotic::loop(void)
 {
   //VERIFICA SE IL TIMER HA FINITO
-  if (this->delayled.isExpired() && digitalRead(this->led) == LOW ) {
+  if (this->delayled.isExpired() && digitalRead(this->led) == LOW && this->period > 0) {
     this->SetLed(this->led, HIGH);
     this->status_led = "CLOSE";
     if(DEBUG_SERIAL) Serial.println("END TIMER CLOSE LED: " + this->led + ' ' + this->label);
@@ -178,7 +178,7 @@ void MyDomotic::open(void)
       this->delayled.start(this->period, AsyncDelay::MILLIS); 
       this->status_led = "MOVING";
     }
-    if(DEBUG_SERIAL){ Serial.print(this->status_led);Serial.print("LED: ");Serial.println(this->led);}
+    if(DEBUG_SERIAL){ Serial.print(this->status_led);Serial.print(" LED: ");Serial.println(this->led);}
   } // SE GIA' ATTIVO NON FARE NULLA
 }
 
