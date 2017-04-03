@@ -72,7 +72,7 @@ void MyDomotic::lock(void)
     this->SetLed(this->led_check, HIGH);
   }
   this->status_led = "LOCK";
-  Serial.println(this->status_led + " LED: " + this->label);
+  if(DEBUG_SERIAL) Serial.println(this->status_led + " LED: " + this->label);
 }
 
 void MyDomotic::off(void){
@@ -103,7 +103,7 @@ void MyDomotic::check_btn_state(void)
   this->btn_read = digitalRead(this->btn);
   if (this->btn_state != this->btn_read && this->btn_read == LOW) {
     //ESEGUE LE AZIONI PREVISTE
-    Serial.println("1. BOTTONE di: " + this->label + " PREMUTO");
+    if(DEBUG_SERIAL) Serial.println("1. BOTTONE di: " + this->label + " PREMUTO");
     this->action(); 
     delay(1);
   }
@@ -118,7 +118,7 @@ void MyDomotic::loop(void)
   if (this->delayled.isExpired() && digitalRead(this->led) == LOW ) {
     this->SetLed(this->led, HIGH);
     this->status_led = "CLOSE";
-    Serial.println("END TIMER CLOSE LED: " + this->led + ' ' + this->label);
+    if(DEBUG_SERIAL) Serial.println("END TIMER CLOSE LED: " + this->led + ' ' + this->label);
 
   }
   this->check_btn_state();
@@ -166,20 +166,24 @@ void MyDomotic::open(void)
 {
   //VERIFICA CHE IL RELE' DI SALITA/DISCESA NON SIA GIA' IN AZIONE
   if (digitalRead(this->led) == HIGH){
-    Serial.println("3 BLOCCO DI TUTTI I RELE DI: " + this->label + " AVVIATO");
+    if(DEBUG_SERIAL) Serial.println("3 BLOCCO DI TUTTI I RELE DI: " + this->label + " AVVIATO");
     // CHIUDE IL RELE' DI DISCESA/SALITA
     lock();
     delay(1);
-    Serial.println("4 ATTESA: " + this->label);
+    if(DEBUG_SERIAL) Serial.println("4 ATTESA: " + this->label);
     //ABILITA IL RELE' DI SALITA/DISCESA
+    this->SetLed(this->led, LOW);
     if(this->period > 0){
-      this->SetLed(this->led, LOW);
-      Serial.println("5 ACCENSIONE RELE DI: " + this->label + " AVVIATO");
+      if(DEBUG_SERIAL) Serial.println("5 ACCENSIONE RELE DI: " + this->label + " AVVIATO");
       this->delayled.start(this->period, AsyncDelay::MILLIS); 
       this->status_led = "MOVING";
     }
-    Serial.print(this->status_led);Serial.print("LED: ");Serial.println(this->led);
+    if(DEBUG_SERIAL){ Serial.print(this->status_led);Serial.print("LED: ");Serial.println(this->led);}
   } // SE GIA' ATTIVO NON FARE NULLA
+}
+
+void MyDomotic::on(void){
+    this->open();
 }
 
 // METODO PER APRIRE/CHIUDERE UNA LUCE ANCHE A TEMPO SE period > 0
@@ -192,7 +196,6 @@ void MyDomotic::change(void)
     this->SetLed(this->led, HIGH);
     this->status_led = "CLOSE";
   }
-  //Serial.print(this->status_led);Serial.print(" LED: ");Serial.println(this->led);
 }
 
 
@@ -202,11 +205,11 @@ void MyDomotic::action(void)
     //VERIFICA SE IL PIN DEL RELE' CONTRARIO E' ACCESO
     if(digitalRead(this->led_check) == LOW /*&& this->btn_read == LOW*/){
       // SE GIA' ERA ACCESO, BLOCCA ENTRAMBI
-      Serial.println("2.2. BLOCCO: " + this->label + " RICHIESTO");
+      if(DEBUG_SERIAL) Serial.println("2.2. BLOCCO: " + this->label + " RICHIESTO");
       this->lock();
     }else{
       // AZIONA APERTURA RELE'
-      Serial.println("2.1 APERTURA RELE DI: " + this->label + " RICHIESTO");
+      if(DEBUG_SERIAL) Serial.println("2.1 APERTURA RELE DI: " + this->label + " RICHIESTO");
       this->open();
     }
   }else if(this->type_object == "COMPLEX"){
@@ -214,11 +217,9 @@ void MyDomotic::action(void)
   }else if(this->type_object == "SWITCH"){
     // SE E' PREVISTO IL TIMER, IL LED DEVE PASSARE DALLO STATO ATTUALE A QUELLO INVERSO
     // PER POI RITORNARE NELLO STESSO STATO
+    this->change();
     if(this->period > 0){
-      this->change();
       this->delayled.start(this->period, AsyncDelay::MILLIS);
-    }else{
-      this->change();
     }
   }
 }

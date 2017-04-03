@@ -16,6 +16,7 @@
 //#include "BooleanOperation.h"
 #include <PubSubClient.h>
 
+extern bool DEBUG_SERIAL;
 
 class MyDomotic
 {

@@ -14,6 +14,7 @@ IPAddress server_mqtt(192, 168, 10, 92);
 IPAddress ip(192, 168, 10, 99);
 //MAC ADDRESS DELLA SCHEDA ETHERNET
 byte mac[]    = {  0xDE, 0xED, 0xBA, 0x00, 0x00, 0x01 };
+bool DEBUG_SERIAL = false;
 /************************************************************************************************/
 /************************************************************************************************/
 /************************************************************************************************/
@@ -73,8 +74,8 @@ MyDomotic mydomotic_obj [] {
 const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic);
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println("Starting..." + ArduinoHost);
+  if(DEBUG_SERIAL) Serial.begin(9600);
+  if(DEBUG_SERIAL) Serial.println("Starting..." + ArduinoHost);
   //CHIAMATA AL SETUP DEGLI OGGETTI
   for (int i = 0; i < sizeof_mydomotic_obj; i++) {
     //CHIAMATA AL SETUP DEGLI OGGETTI
@@ -82,17 +83,17 @@ void setup() {
   }
   
   //ATTENDE L'IP DAL DHCP
-  Serial.println("Attempting IP...");
+  if(DEBUG_SERIAL) Serial.println("Attempting IP...");
   if (Ethernet.begin(mac) == 0) {
-    Serial.println("Failed to configure Ethernet using DHCP");
+    if(DEBUG_SERIAL) Serial.println("Failed to configure Ethernet using DHCP");
     Ethernet.begin(mac, ip);
   }
-  Serial.print("LocalIP: ");
-  Serial.println(Ethernet.localIP());
+  if(DEBUG_SERIAL) Serial.print("LocalIP: ");
+  if(DEBUG_SERIAL) Serial.println(Ethernet.localIP());
   client.setServer(server_mqtt, 1883);
   client.setCallback(callback);
   reconnect();
-  Serial.println("STARTED!");
+  if(DEBUG_SERIAL) Serial.println("STARTED!");
 }
 
 
@@ -105,7 +106,7 @@ void loop() {
     if (now - lastReconnectAttempt > 5000) {
       lastReconnectAttempt = now;
       // Attempt to reconnect
-      Serial.println("MQTT Reconnect!");
+      if(DEBUG_SERIAL) Serial.println("MQTT Reconnect!");
       if (reconnect()) {
         lastReconnectAttempt = 0;
       }
@@ -131,13 +132,13 @@ boolean reconnect() {
 
 void callback(char* topicRecive, byte* payload, unsigned int length) {
   //DEBUG STAMPA COSA ARRIVA SU MQTT
-  Serial.print("MQTT Message arrived [");
-  Serial.print(topicRecive);
-  Serial.print("] ");
+  if(DEBUG_SERIAL) Serial.print("MQTT Message arrived [");
+  if(DEBUG_SERIAL) Serial.print(topicRecive);
+  if(DEBUG_SERIAL) Serial.print("] ");
   for (int i = 0; i < length; i++) {
     Serial.print((char) payload[i]);
   }
-  Serial.println();
+  if(DEBUG_SERIAL) Serial.println();
   // CERCA L'OGGETTO MYDOMOTIC CON IL TOPIC RICEVUTO 
   for (int i = 0; i < sizeof_mydomotic_obj; i++) {
     String topic = mydomotic_obj[i].getTopic();
