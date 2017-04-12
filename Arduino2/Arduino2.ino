@@ -9,12 +9,15 @@
 /************************************************************************************************/
 /************************************************************************************************/
 // IP DEL SERVER MQTT
-IPAddress server_mqtt(192, 168, 10, 92);
+IPAddress server_mqtt(192, 168, 88, 250);
 //DEFINIZIONE IP SE IL DHCP NON FUNZIONA
-IPAddress ip(192, 168, 10, 98);
+IPAddress ip(192, 168, 88, 221);
 //MAC ADDRESS DELLA SCHEDA ETHERNET
-byte mac[]    = {  0xDE, 0xED, 0xBA, 0x00, 0x00, 0x02 };
-bool DEBUG_SERIAL = false;
+byte mac[]    = {  0xDE, 0xED, 0xBA, 0x20, 0x30, 0x02 };
+const bool DEBUG_SERIAL = true;
+const bool NETWORK_ENABLE = true;
+const bool DHCP_ENABLE = true;
+const bool MQTT_ENABLE = NETWORK_ENABLE;
 /************************************************************************************************/
 /************************************************************************************************/
 /************************************************************************************************/
@@ -30,7 +33,7 @@ EthernetClient ethClient;
 PubSubClient client(ethClient);
 long lastReconnectAttempt = 0;
 const int WL_MAC_ADDR_LENGTH = 6;
-const String ArduinoHost =  ArduinoHostName + 
+const String ARDUINOHOST =  ArduinoHostName +
                             String(mac[WL_MAC_ADDR_LENGTH - 3], HEX) +
                             String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) +
                             String(mac[WL_MAC_ADDR_LENGTH - 1], HEX) ;
@@ -48,10 +51,10 @@ const String ArduinoHost =  ArduinoHostName +
 /************************************************************************************************/
 
 MyDomotic mydomotic_obj [] {
-  MyDomotic("Tapparella 9 APRI", ArduinoHost, 23, 39, 40000, 41),      //RELE 1 UP  //TAPPARELLA 9
-  MyDomotic("Tapparella 9 CHIUDI", ArduinoHost, 25, 41, 40000, 39),    //RELE 2 DW  //TAPPARELLA 9
-  MyDomotic("Interruttore Luci 1", ArduinoHost, 27, 43),               //RELE 3 LUCI
-  MyDomotic("Interruttore Cancello", ArduinoHost, 29, 45, 5000),       //RELE 4 CANCELLO
+  MyDomotic("Tapparella 9 APRI", 21, 39, 33000, 41),      //RELE 1 UP  //TAPPARELLA 9
+  MyDomotic("Tapparella 9 CHIUDI", 20, 41, 33000, 39),    //RELE 2 DW  //TAPPARELLA 9
+  MyDomotic("Interruttore Luci 1", 19, 43),               //RELE 3 LUCI
+  MyDomotic("Interruttore Cancello", 18, 45, 10),       //RELE 4 CANCELLO
 };
 /************************************************************************************************/
 /************************************************************************************************/
@@ -63,7 +66,7 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
 
 void setup() {
   if(DEBUG_SERIAL) Serial.begin(9600);
-  if(DEBUG_SERIAL) Serial.println("Starting..." + ArduinoHost);
+  if(DEBUG_SERIAL) Serial.println("Starting..." + ARDUINOHOST);
   //CHIAMATA AL SETUP DEGLI OGGETTI
   for (int i = 0; i < sizeof_mydomotic_obj; i++) {
     //CHIAMATA AL SETUP DEGLI OGGETTI
@@ -72,15 +75,23 @@ void setup() {
   
   //ATTENDE L'IP DAL DHCP
   if(DEBUG_SERIAL) Serial.println("Attempting IP...");
-  if (Ethernet.begin(mac) == 0) {
-    if(DEBUG_SERIAL) Serial.println("Failed to configure Ethernet using DHCP");
-    Ethernet.begin(mac, ip);
+  if(NETWORK_ENABLE){
+    if(DHCP_ENABLE){
+      if (Ethernet.begin(mac) == 0) {
+        if(DEBUG_SERIAL) Serial.println("Failed to configure Ethernet using DHCP");
+        Ethernet.begin(mac, ip);
+      }
+    }else{
+      Ethernet.begin(mac, ip);
+    }
+    if(DEBUG_SERIAL) Serial.print("LocalIP: ");
+    if(DEBUG_SERIAL) Serial.println(Ethernet.localIP());
+    client.setServer(server_mqtt, 1883);
+    client.setCallback(callback);
+    reconnect();
+  }else{
+    if(DEBUG_SERIAL) Serial.println("NO NETWORK ENABLE....");
   }
-  if(DEBUG_SERIAL) Serial.print("LocalIP: ");
-  if(DEBUG_SERIAL) Serial.println(Ethernet.localIP());
-  client.setServer(server_mqtt, 1883);
-  client.setCallback(callback);
-  reconnect();
   if(DEBUG_SERIAL) Serial.println("STARTED!");
 }
 
@@ -89,25 +100,27 @@ void loop() {
   for (int i = 0; i < sizeof_mydomotic_obj; i++) {
     mydomotic_obj[i].loop();
   }
-  if (!client.connected()) {
-    long now = millis();
-    if (now - lastReconnectAttempt > 5000) {
-      lastReconnectAttempt = now;
-      // Attempt to reconnect
-      if(DEBUG_SERIAL) Serial.println("MQTT Reconnect!");
-      if (reconnect()) {
-        lastReconnectAttempt = 0;
+  if(NETWORK_ENABLE){
+    if (!client.connected()) {
+      long now = millis();
+      if (now - lastReconnectAttempt > 5000) {
+        lastReconnectAttempt = now;
+        // Attempt to reconnect
+        if(DEBUG_SERIAL) Serial.println("MQTT Reconnect!");
+        if (reconnect()) {
+          lastReconnectAttempt = 0;
+        }
       }
+    } else {
+      // Client connected
+      client.loop();
     }
-  } else {
-    // Client connected
-    client.loop();
   }
 }
 
 boolean reconnect() {
-  if (client.connect((char*)ArduinoHost.c_str())) {
-    String json = "{'host':'" + ArduinoHost + "', 'state':'connect'}";
+  if (client.connect((char*)ARDUINOHOST.c_str())) {
+    String json = "{\"host\":\"" + ARDUINOHOST + "\", \"state\":\"connect\",\"ip\": \"" + Ethernet.localIP() + "\"}";
     //PUBBLICA SU MQTT I DATI DI STATO
     client.publish("out", (char*)json.c_str());
     // RI/CREA LE subscribe PER MQTT
