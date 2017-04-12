@@ -5,3 +5,5 @@
 .idea
 */*.cpp
 */*.h
+gateway/nohup.out
+gateway/gateway.log

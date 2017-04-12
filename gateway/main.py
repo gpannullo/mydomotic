@@ -9,6 +9,9 @@ READ_OUT_TOPIC = (
 )
 WRITE_TOPIC = 'domoticz/in'
 DB_SQLITE = '/home/pi/domoticz/domoticz.db'
+MQTT_SERVER = "192.168.88.250"
+MQTT_PORT = 1883
+MQTT_TIMEOUT = 60
 ########################################################################
 
 
@@ -79,6 +82,6 @@ client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 
-client.connect("192.168.88.250", 1883, 60)
+client.connect(MQTT_SERVER, MQTT_PORT, MQTT_TIMEOUT)
 
 client.loop_forever()
