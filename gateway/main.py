@@ -8,7 +8,7 @@ READ_OUT_TOPIC = (
     'out',
 )
 WRITE_TOPIC = 'domoticz/in'
-DB_SQLITE = 'domoticz.db'
+DB_SQLITE = '/home/pi/domoticz/domoticz.db'
 ########################################################################
 
 
@@ -41,11 +41,12 @@ def QueryTopic(params, column):
     return l
 
 
-def sendTopic(host, led):
-    list_command = QueryTopic(params='%' + host + '%' + led + '%', column='StrParam1')
+def sendTopic(host, btn):
+    list_command = QueryTopic(params='%' + host + '%' + btn + '%', column='StrParam1')
+    print(list_command)
     for l in list_command:
         client.publish(WRITE_TOPIC, payload='{"idx": ' + str(l['id']) + ', "nvalue": 1}', qos=0, retain=False)
-    list_command = QueryTopic(params='%' + host + '%' + led + '%', column='StrParam2')
+    list_command = QueryTopic(params='%' + host + '%' + btn + '%', column='StrParam2')
     for l in list_command:
         client.publish(WRITE_TOPIC, payload='{"idx": ' + str(l['id']) + ', "nvalue": 0}', qos=0, retain=False)
 
@@ -71,13 +72,13 @@ def on_message(client, userdata, msg):
         if msg.topic == t:
             msg_revice = json.loads(msg.payload)
             if msg_revice['state'] == 'ready':
-                sendTopic(host=msg_revice['host'], led=msg_revice['led'])
+                sendTopic(host=msg_revice['host'], btn=msg_revice['btn'])
 
 
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 
-client.connect("studio.htsystem.com", 20152, 60)
+client.connect("192.168.88.250", 1883, 60)
 
 client.loop_forever()

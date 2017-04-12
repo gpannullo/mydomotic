@@ -16,7 +16,9 @@
 //#include "BooleanOperation.h"
 #include <PubSubClient.h>
 
-extern bool DEBUG_SERIAL;
+extern const bool NETWORK_ENABLE;
+extern const bool DEBUG_SERIAL;
+extern const String ARDUINOHOST;
 
 class MyDomotic
 {
@@ -36,6 +38,7 @@ private:
     bool client_mqtt_enable = false;
     String ArduinoHost;
 
+
     /* Methods */
     //void lock(void);
     void open(void);
@@ -50,9 +53,9 @@ private:
     
 public:
     MyDomotic();
-    MyDomotic(String label, String ArduinoHost, int btn, int led);
-    MyDomotic(String label, String ArduinoHost, int btn, int led, long period);
-    MyDomotic(String label, String ArduinoHost, int btn_up, int led_up, long period, int led_dw);
+    MyDomotic(String label, int btn, int led);
+    MyDomotic(String label, int btn, int led, long period);
+    MyDomotic(String label, int btn_up, int led_up, long period, int led_dw);
     
     void setup(void);
     void loop(void);
