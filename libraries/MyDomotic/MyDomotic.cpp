@@ -237,7 +237,7 @@ void MyDomotic::action(void)
 }
 
 void MyDomotic::subMQTT(PubSubClient client) {
-  this->client = client;
+  this->client = &client;
   this->client_mqtt_enable = true;
   client.subscribe((char *)this->getTopic().c_str());
 }
@@ -260,7 +260,7 @@ void MyDomotic::SetLed(int LED, int level) {
                 "\"btn\":\"" + this->btn + "\", " +
                 "\"status\":\"" + digitalRead(LED) + "\"}";
   if (this->client_mqtt_enable && this->led == LED) {
-    this->client.publish("out", (char*)json.c_str());
+    this->client->publish("out", (char*)json.c_str());
   }
 }
 

@@ -34,7 +34,7 @@ private:
     String status_led = "";
     String label = "";
     AsyncDelay delayled;
-    PubSubClient client;
+    PubSubClient *client;
     bool client_mqtt_enable = false;
     String ArduinoHost;
 
