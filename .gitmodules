@@ -1,6 +1,3 @@
-[submodule "lib/el-client"]
-	path = lib/el-client
-	url = https://github.com/jeelabs/el-client.git
 [submodule "extern-library/el-client"]
 	path = extern-library/el-client
 	url = https://github.com/jeelabs/el-client.git
