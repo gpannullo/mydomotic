@@ -11,7 +11,21 @@
 
 #include <Arduino.h>
 #include <AsyncDelay.h>
-#include <PubSubClient.h>
+
+#if ETHERNETSUPPORT == 0
+  #include <ELClient.h>
+  #include <ELClientCmd.h>
+  #include <ELClientMqtt.h>
+
+  extern ELClientMqtt client_mqtt;
+
+  extern ELClientMqtt client_mqtt;
+#endif
+#if ETHERNETSUPPORT == 1
+  #include <Ethernet.h>
+  #include <PubSubClient.h>
+#endif
+
 
 extern const bool NETWORK_ENABLE;
 extern const bool DEBUG_SERIAL;
@@ -31,7 +45,12 @@ private:
     String status_led = "";
     String label = "";
     AsyncDelay delayled;
-    PubSubClient *client;
+    #if ETHERNETSUPPORT == 0
+      ELClientMqtt *client;
+    #endif
+    #if ETHERNETSUPPORT == 1
+      PubSubClient *client;
+    #endif
     bool client_mqtt_enable = false;
     String ArduinoHost;
 
@@ -60,7 +79,6 @@ public:
     void on(void);
     void off(void);
     void lock(void);
-    void subMQTT(PubSubClient *client);
     String getTopic(void);
 };
 

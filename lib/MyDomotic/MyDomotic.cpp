@@ -236,12 +236,6 @@ void MyDomotic::action(void)
   }
 }
 
-void MyDomotic::subMQTT(PubSubClient *client) {
-  this->client = client;
-  this->client_mqtt_enable = true;
-  client->subscribe((char *)this->getTopic().c_str());
-}
-
 // METODO PER CHIUDERE LA PERSIANA
 // DA RIVEDERE COME SETTARE LO STATO
 void MyDomotic::close(void)
