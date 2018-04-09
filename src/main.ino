@@ -39,6 +39,9 @@ MyDomotic mydomotic_obj [] {
 const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic);
 
 #if ETHERNETSUPPORT == 0
+  const bool NETWORK_ENABLE = true;
+  const String ARDUINOHOST =  "ArduinoMyDomotic";
+#elif ETHERNETSUPPORT == 2
   const String ARDUINOHOST =  "ArduinoESP";
   // Initialize a connection to esp-link using the normal hardware serial port both for
   // SLIP and for debug messages.
@@ -102,8 +105,7 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
     Serial.println("MQTT published");
   }
 
-#endif
-#if ETHERNETSUPPORT == 1
+#elif ETHERNETSUPPORT == 1
   /************************************************************************************************/
   /************************************************************************************************/
   /*******************************  CONFIGURAZIONE PARAMETRI   ************************************/
@@ -182,7 +184,6 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
       }
     }
   }
-
 #endif
 
 
@@ -215,8 +216,34 @@ void setup() {
     }else{
       if(DEBUG_SERIAL) Serial.println("NO NETWORK ENABLE....");
     }
+  #elif ETHERNETSUPPORT  == 2
+    if(DEBUG_SERIAL) Serial.println("EL-Client starting!");
+
+    // Sync-up with esp-link, this is required at the start of any sketch and initializes the
+    // callbacks to the wifi status change callback. The callback gets called with the initial
+    // status right after Sync() below completes.
+    esp.wifiCb.attach(wifiCb); // wifi status change callback, optional (delete if not desired)
+    bool ok;
+    do {
+      ok = esp.Sync();      // sync up with esp-link, blocks for up to 2 seconds
+      if (!ok) Serial.println("EL-Client sync failed!");
+    } while(!ok);
+    if(DEBUG_SERIAL) Serial.println("EL-Client synced!");
+
+    // Set-up callbacks for events and initialize with es-link.
+    client_mqtt.connectedCb.attach(mqttConnected);
+    client_mqtt.disconnectedCb.attach(mqttDisconnected);
+    client_mqtt.publishedCb.attach(mqttPublished);
+    client_mqtt.dataCb.attach(callback);
+    client_mqtt.setup();
+
+    //Serial.println("ARDUINO: setup mqtt lwt");
+    //mqtt.lwt("/lwt", "offline", 0, 0); //or mqtt.lwt("/lwt", "offline");
+
+    Serial.println("EL-MQTT ready");
   #endif
-  if(DEBUG_SERIAL) Serial.println("STARTED!");
+
+  if(DEBUG_SERIAL) Serial.println("SYSTEM STARTED!");
 }
 
 
@@ -241,5 +268,8 @@ void loop() {
         client_mqtt.loop();
       }
     }
+  #elif ETHERNETSUPPORT == 2
+    esp.Process();
+    delay(1);
   #endif
 }

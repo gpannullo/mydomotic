@@ -254,6 +254,8 @@ void MyDomotic::SetLed(int LED, int level) {
                 "\"btn\":\"" + this->btn + "\", " +
                 "\"status\":\"" + digitalRead(LED) + "\"}";
   if (this->client_mqtt_enable && this->led == LED) {
+    #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
     this->client->publish("out", (char*)json.c_str());
+    #endif
   }
 }

@@ -12,22 +12,19 @@
 #include <Arduino.h>
 #include <AsyncDelay.h>
 
-#if ETHERNETSUPPORT == 0
+#if ETHERNETSUPPORT == 1
+  #include <Ethernet.h>
+  #include <PubSubClient.h>
+  extern const bool NETWORK_ENABLE;
+#elif ETHERNETSUPPORT == 2
   #include <ELClient.h>
   #include <ELClientCmd.h>
   #include <ELClientMqtt.h>
 
   extern ELClientMqtt client_mqtt;
-
   extern ELClientMqtt client_mqtt;
 #endif
-#if ETHERNETSUPPORT == 1
-  #include <Ethernet.h>
-  #include <PubSubClient.h>
-#endif
 
-
-extern const bool NETWORK_ENABLE;
 extern const bool DEBUG_SERIAL;
 extern const String ARDUINOHOST;
 
@@ -45,10 +42,9 @@ private:
     String status_led = "";
     String label = "";
     AsyncDelay delayled;
-    #if ETHERNETSUPPORT == 0
+    #if ETHERNETSUPPORT == 2
       ELClientMqtt *client;
-    #endif
-    #if ETHERNETSUPPORT == 1
+    #elif ETHERNETSUPPORT == 1
       PubSubClient *client;
     #endif
     bool client_mqtt_enable = false;
