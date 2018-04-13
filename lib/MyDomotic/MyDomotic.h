@@ -22,7 +22,6 @@
   #include <ELClientMqtt.h>
 
   extern ELClientMqtt client_mqtt;
-  extern ELClientMqtt client_mqtt;
 #endif
 
 extern const bool DEBUG_SERIAL;

@@ -3,6 +3,10 @@
 /*******************************  Librerie                   ************************************/
 /************************************************************************************************/
 /************************************************************************************************/
+#ifndef ETHERNETSUPPORT
+ #define ETHERNETSUPPORT=0
+#endif
+
 #include "MyDomotic.h"
 const bool DEBUG_SERIAL = true;
 
@@ -39,7 +43,7 @@ MyDomotic mydomotic_obj [] {
 const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic);
 
 #if ETHERNETSUPPORT == 0
-  const bool NETWORK_ENABLE = true;
+  const bool NETWORK_ENABLE = false;
   const String ARDUINOHOST =  "ArduinoMyDomotic";
 #elif ETHERNETSUPPORT == 2
   const String ARDUINOHOST =  "ArduinoESP";
@@ -199,23 +203,19 @@ void setup() {
   #if ETHERNETSUPPORT  == 1
     //ATTENDE L'IP DAL DHCP
     if(DEBUG_SERIAL) Serial.println("Attempting IP...");
-    if(NETWORK_ENABLE){
-      if(DHCP_ENABLE){
-        if (Ethernet.begin(mac) == 0) {
-          if(DEBUG_SERIAL) Serial.println("Failed to configure Ethernet using DHCP");
-          Ethernet.begin(mac, ip);
-        }
-      }else{
+    if(DHCP_ENABLE){
+      if (Ethernet.begin(mac) == 0) {
+        if(DEBUG_SERIAL) Serial.println("Failed to configure Ethernet using DHCP");
         Ethernet.begin(mac, ip);
       }
-      if(DEBUG_SERIAL) Serial.print("LocalIP: ");
-      if(DEBUG_SERIAL) Serial.println(Ethernet.localIP());
-      client_mqtt.setServer(server_mqtt, 1883);
-      client_mqtt.setCallback(callback);
-      reconnect();
     }else{
-      if(DEBUG_SERIAL) Serial.println("NO NETWORK ENABLE....");
+      Ethernet.begin(mac, ip);
     }
+    if(DEBUG_SERIAL) Serial.print("LocalIP: ");
+    if(DEBUG_SERIAL) Serial.println(Ethernet.localIP());
+    client_mqtt.setServer(server_mqtt, 1883);
+    client_mqtt.setCallback(callback);
+    reconnect();
   #elif ETHERNETSUPPORT  == 2
     if(DEBUG_SERIAL) Serial.println("EL-Client starting!");
 
@@ -252,24 +252,23 @@ void loop() {
     mydomotic_obj[i].loop();
   }
   #if ETHERNETSUPPORT == 1
-    if(NETWORK_ENABLE){
-      if (!client_mqtt.connected()) {
-        long now = millis();
-        if (now - lastReconnectAttempt > 5000) {
-          lastReconnectAttempt = now;
-          // Attempt to reconnect
-          if(DEBUG_SERIAL) Serial.println("MQTT Reconnect!");
-          if (reconnect()) {
-            lastReconnectAttempt = 0;
-          }
+    if (!client_mqtt.connected()) {
+      long now = millis();
+      if (now - lastReconnectAttempt > 5000) {
+        lastReconnectAttempt = now;
+        // Attempt to reconnect
+        if(DEBUG_SERIAL) Serial.println("MQTT Reconnect!");
+        if (reconnect()) {
+          lastReconnectAttempt = 0;
         }
-      } else {
-        // Client connected
-        client_mqtt.loop();
       }
+    } else {
+      // Client connected
+      client_mqtt.loop();
     }
   #elif ETHERNETSUPPORT == 2
     esp.Process();
     delay(1);
   #endif
+  delay(1);
 }
