@@ -4,10 +4,11 @@
 /************************************************************************************************/
 /************************************************************************************************/
 #ifndef ETHERNETSUPPORT
- #define ETHERNETSUPPORT=0
+ #define ETHERNETSUPPORT 0
 #endif
 
 #include "MyDomotic.h"
+#include <EEPROM.h>
 const bool DEBUG_SERIAL = true;
 
 /************************************************************************************************/
@@ -16,7 +17,38 @@ const bool DEBUG_SERIAL = true;
 /************************************************************************************************/
 /************************************************************************************************/
 
-MyDomotic mydomotic_obj [] {
+int eepromAddress =       0;
+const int RESET_TIMEOUT=  10;
+
+struct ArduinoSetting {
+  String hostname;
+};
+
+ArduinoSetting            arduino_setting;
+
+#if ARDUINOTYPE == 4096
+  const int digital_input []  =   {22,23,24,25,26,27,28,29,30,31,32,33,34,35,36};
+  const int digital_output [] =   {37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53};
+  const int analogic_input [] =   {A0,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13,A14,A15};
+  const int custom_input []   =   {14,15,16,17,18,19,20,21};
+#elif ARDUINOTYPE == 1024
+  const int digital_input [] = {};
+  const int digital_output [] = {};
+  const int analogic_input [] = {};
+  const int custom_input [] = {};
+#elif ARDUINOTYPE == 512
+  const int digital_input [] = {};
+  const int digital_output [] = {};
+  const int analogic_input [] = {};
+  const int custom_input [] = {};
+#else
+  #error "Define 'ARDUINOTYPE' in your paltformio.ini"
+#endif
+const int count_digital_input = sizeof(digital_input) / sizeof(int);
+const int sizeof_mydomotic_obj = count_digital_input;
+MyDomotic mydomotic_obj [count_digital_input];
+
+/*MyDomotic mydomotic_obj [] {
   MyDomotic("Tapparella 1 APRI", 23, 34, 25000, 32),      //RELE 1 UP  //TAPPARELLA 1
   MyDomotic("Tapparella 1 CHIUDI", 25, 32, 25000, 34),    //RELE 2 DW  //TAPPARELLA 1
   MyDomotic("Tapparella 2 APRI", 27, 30, 33000, 28),      //RELE 3 UP  //TAPPARELLA 2
@@ -34,13 +66,12 @@ MyDomotic mydomotic_obj [] {
   MyDomotic("Tapparella 8 APRI", 47, 48, 33000, 19),      //RELE 15 UP  //TAPPARELLA 8
   MyDomotic("Tapparella 8 CHIUDI", 49, 19, 33000, 48),    //RELE 16 DW  //TAPPARELLA 8
 };
-/************************************************************************************************/
-/************************************************************************************************/
-/************************************************************************************************/
-/************************************************************************************************/
 
-//CALCOLO DEL NUMERO DI OGGETTO MYDOMOTIC AGGIUNTI
 const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic);
+/************************************************************************************************/
+/************************************************************************************************/
+/************************************************************************************************/
+/************************************************************************************************/
 
 #if ETHERNETSUPPORT == 0
   const bool NETWORK_ENABLE = false;
@@ -191,9 +222,63 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
 #endif
 
 
+
+
+
+void verifica_reset_data(){
+  pinMode(13, INPUT_PULLUP);
+  int resetlevel = digitalRead(13);
+  if (resetlevel == LOW){
+    if(DEBUG_SERIAL) Serial.print("RESET MODE Request... wait ");
+    if(DEBUG_SERIAL) Serial.print(RESET_TIMEOUT);
+    if(DEBUG_SERIAL) Serial.println("s before remove all");
+    for (int i=0;i<RESET_TIMEOUT;i++){
+      if(DEBUG_SERIAL) Serial.print((RESET_TIMEOUT-i));
+      if(DEBUG_SERIAL) Serial.println("s");
+      delay(1000);
+    }
+
+    if (resetlevel == LOW){
+      if(DEBUG_SERIAL) Serial.println("RESET MODE Initialize:");
+      int printvar = 0;
+      for (unsigned int i = 0 ; i < EEPROM.length() ; i++) {
+        if(DEBUG_SERIAL) Serial.print(".");
+        printvar ++;
+        if (printvar == 32){
+          printvar=0;
+          if(DEBUG_SERIAL) Serial.println("");
+        }
+        EEPROM.write(i, 0);
+      }
+      if(DEBUG_SERIAL) Serial.println("");
+      if(DEBUG_SERIAL) Serial.println("");
+      if(DEBUG_SERIAL) Serial.println("Done!");
+      if(DEBUG_SERIAL) Serial.println("ALL DATA RESET");
+      arduino_setting.hostname = ARDUINOHOST;
+      EEPROM.put(eepromAddress, arduino_setting);
+      eepromAddress = eepromAddress + sizeof(ArduinoSetting);
+      for(int i=0; i<count_digital_input; i++){
+        int digital_output_status;
+        EEPROM.put(eepromAddress, digital_output_status);
+        eepromAddress = eepromAddress + sizeof(int);
+      }
+    }
+  }
+
+}
+
+void load_stored_data(){
+  EEPROM.get(eepromAddress, arduino_setting);
+}
+
 void setup() {
   if(DEBUG_SERIAL) Serial.begin(115200);
+
+  verifica_reset_data();
+  load_stored_data();
+
   if(DEBUG_SERIAL) Serial.println("Starting..." + ARDUINOHOST);
+
   //CHIAMATA AL SETUP DEGLI OGGETTI
   for (int i = 0; i < sizeof_mydomotic_obj; i++) {
     //CHIAMATA AL SETUP DEGLI OGGETTI

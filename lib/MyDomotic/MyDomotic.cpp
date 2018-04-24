@@ -75,9 +75,6 @@ void MyDomotic::lock(void)
   }
   this->status_led = "LOCK";
   if (DEBUG_SERIAL) Serial.println(this->status_led + " LED: " + this->label);
-  if (DEBUG_SERIAL) Serial.println(this->btn);
-  if (DEBUG_SERIAL) Serial.println(this->btn_read);
-  if (DEBUG_SERIAL) Serial.println(this->btn_state);
 }
 
 void MyDomotic::off(void) {
