@@ -27,19 +27,30 @@
 extern const bool DEBUG_SERIAL;
 extern const String ARDUINOHOST;
 
+struct MyDomoticSetting {
+  int btn;                        //BOTTONE DELL'AZIONE
+  int led;                        //LED PRIMARIO DI RIFERIMENTO PER ATTIVAZIONE RELE'
+  int led_check;                  //LED SECONDARIO UTILIZZATO IN CASO DI PERSIANE
+  int arrayled[2];                //ARRAY DI LED IN SOSTITUZIONE DEI PRECEDENTI
+  long period;                    //EVENUALE TIMER
+  long period_state;              //EVENUALE TIMER
+  int led_state;                  //STATO DEL LED ATTUALE
+  int type_object;                //TIPO DI OGGETTO [SWITCH, BLIND, BUTTON*, BLIND2*]
+  char label[50];                 //STRINGA DI RICONOSCIMENTO
+};
+
+const int MYD_TYPE_SWITCH     = 0;
+const int MYD_TYPE_BUTTON     = 1;
+const int MYD_TYPE_BLIND      = 2;
+const int MYD_TYPE_BLIND2     = 3;
+const int MYD_TYPE_COMPLEX    = 99;
+
 class MyDomotic
 {
 private:
-    /* Attributes */
-    int led;
-    int led_check;
-    int btn;
     int btn_state;
     int btn_read;
-    long period;
-    String type_object;
-    String status_led = "";
-    String label = "";
+    MyDomoticSetting data;
     AsyncDelay delayled;
     #if ETHERNETSUPPORT == 2
       ELClientMqtt *client;
@@ -48,6 +59,7 @@ private:
     #endif
     bool client_mqtt_enable = false;
     String ArduinoHost;
+    String status_led;
 
 
     /* Methods */
@@ -64,6 +76,7 @@ private:
 
 public:
     MyDomotic();
+    MyDomotic(MyDomoticSetting data);
     MyDomotic(String label, int btn, int led);
     MyDomotic(String label, int btn, int led, long period);
     MyDomotic(String label, int btn_up, int led_up, long period, int led_dw);
@@ -75,6 +88,8 @@ public:
     void off(void);
     void lock(void);
     String getTopic(void);
+    MyDomoticSetting get_setting(void);
+
 };
 
 
