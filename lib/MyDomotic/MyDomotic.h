@@ -11,6 +11,8 @@
 
 #include <Arduino.h>
 #include <AsyncDelay.h>
+#include <EEPROM.h>
+#include "MyDomoticCore.h"
 
 #if ETHERNETSUPPORT == 1
   #include <Ethernet.h>
@@ -20,24 +22,14 @@
   #include <ELClient.h>
   #include <ELClientCmd.h>
   #include <ELClientMqtt.h>
-
+  #include <ELClientWebServer.h>
   extern ELClientMqtt client_mqtt;
 #endif
 
-extern const bool DEBUG_SERIAL;
-extern const String ARDUINOHOST;
-
-struct MyDomoticSetting {
-  int btn;                        //BOTTONE DELL'AZIONE
-  int led;                        //LED PRIMARIO DI RIFERIMENTO PER ATTIVAZIONE RELE'
-  int led_check;                  //LED SECONDARIO UTILIZZATO IN CASO DI PERSIANE
-  int arrayled[2];                //ARRAY DI LED IN SOSTITUZIONE DEI PRECEDENTI
-  long period;                    //EVENUALE TIMER
-  long period_state;              //EVENUALE TIMER
-  int led_state;                  //STATO DEL LED ATTUALE
-  int type_object;                //TIPO DI OGGETTO [SWITCH, BLIND, BUTTON*, BLIND2*]
-  char label[50];                 //STRINGA DI RICONOSCIMENTO
-};
+extern bool DEBUG_SERIAL_MYD;
+extern bool DEBUG_SERIAL;
+extern String ARDUINOHOST;
+extern ArduinoSetting arduino_setting;
 
 const int MYD_TYPE_SWITCH     = 0;
 const int MYD_TYPE_BUTTON     = 1;
@@ -88,8 +80,11 @@ public:
     void off(void);
     void lock(void);
     String getTopic(void);
+    String get_status(void);
+    String to_str(void);
+    String type_to_str(void);
     MyDomoticSetting get_setting(void);
-
+    void save (void);
 };
 
 

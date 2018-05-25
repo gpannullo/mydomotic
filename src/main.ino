@@ -7,9 +7,10 @@
  #define ETHERNETSUPPORT 0
 #endif
 
-#include "MyDomotic.h"
-#include <EEPROM.h>
-const bool DEBUG_SERIAL = true;
+
+#include "command.h"
+#include "platform.h"
+bool DEBUG_SERIAL = true;
 
 /************************************************************************************************/
 /************************************************************************************************/
@@ -17,36 +18,28 @@ const bool DEBUG_SERIAL = true;
 /************************************************************************************************/
 /************************************************************************************************/
 
-int eepromAddress =       0;
-const int RESET_TIMEOUT=  10;
+int eepromAddress                     = 0;
+const int RESET_TIMEOUT               = 10;
+const bool WaitTimeOutBeforeReset     = true;
+bool DEBUG_SERIAL_MYD                 = false;
+const int RESET_PIN_MODE              = 13;
+String inputSerialCommand             = "";     // a string to hold incoming data
+String inputSerialData                = "";     // a string to hold incoming data
+boolean inputSerialStringComplete     = false;  // whether the string is complete
+boolean inputSerialDataFound          = false;  // whether the string is complete
+ArduinoSetting arduino_setting;
 
-struct ArduinoSetting {
-  String hostname;
-};
-
-ArduinoSetting            arduino_setting;
-
-#if ARDUINOTYPE == 4096
-  const int digital_input []  =   {22,23,24,25,26,27,28,29,30,31,32,33,34,35,36};
-  const int digital_output [] =   {37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53};
-  const int analogic_input [] =   {A0,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13,A14,A15};
-  const int custom_input []   =   {14,15,16,17,18,19,20,21};
-#elif ARDUINOTYPE == 1024
-  const int digital_input [] = {};
-  const int digital_output [] = {};
-  const int analogic_input [] = {};
-  const int custom_input [] = {};
-#elif ARDUINOTYPE == 512
-  const int digital_input [] = {};
-  const int digital_output [] = {};
-  const int analogic_input [] = {};
-  const int custom_input [] = {};
-#else
-  #error "Define 'ARDUINOTYPE' in your paltformio.ini"
-#endif
+/****************************************
+  Define board pins input/output count
+****************************************/
 const int count_digital_input = sizeof(digital_input) / sizeof(int);
-const int sizeof_mydomotic_obj = count_digital_input;
+const int count_digital_output = sizeof(digital_output) / sizeof(int);
+const int count_analogic_input = sizeof(analogic_input) / sizeof(int);
+const int count_custom_input = sizeof(custom_input) / sizeof(int);
+/*VARIABILE DA ELIMINARE*/
 MyDomotic mydomotic_obj [count_digital_input];
+
+
 
 /*MyDomotic mydomotic_obj [] {
   MyDomotic("Tapparella 1 APRI", 23, 34, 25000, 32),      //RELE 1 UP  //TAPPARELLA 1
@@ -75,71 +68,7 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
 
 #if ETHERNETSUPPORT == 0
   const bool NETWORK_ENABLE = false;
-  const String ARDUINOHOST =  "ArduinoMyDomotic";
-#elif ETHERNETSUPPORT == 2
-  const String ARDUINOHOST =  "ArduinoESP";
-  // Initialize a connection to esp-link using the normal hardware serial port both for
-  // SLIP and for debug messages.
-  ELClient esp(&Serial, &Serial);
-
-  // Initialize CMD client (for GetTime)
-  ELClientCmd cmd(&esp);
-
-  // Initialize the MQTT client
-  ELClientMqtt client_mqtt(&esp);
-
-  // Callback made from esp-link to notify of wifi status changes
-  // Here we just print something out for grins
-  void wifiCb(void* response) {
-    ELClientResponse *res = (ELClientResponse*)response;
-    if (res->argc() == 1) {
-      uint8_t status;
-      res->popArg(&status, 1);
-
-      if(status == STATION_GOT_IP) {
-        Serial.println("WIFI CONNECTED");
-      } else {
-        Serial.print("WIFI NOT READY: ");
-        Serial.println(status);
-      }
-    }
-  }
-
-  bool connected;
-
-  // Callback when MQTT is connected
-  void mqttConnected(void* response) {
-    Serial.println("MQTT connected!");
-    client_mqtt.subscribe("/esp-link/1");
-    client_mqtt.subscribe("/hello/world/#");
-    //mqtt.subscribe("/esp-link/2", 1);
-    //mqtt.publish("/esp-link/0", "test1");
-    connected = true;
-  }
-
-  // Callback when MQTT is disconnected
-  void mqttDisconnected(void* response) {
-    Serial.println("MQTT disconnected");
-    connected = false;
-  }
-
-  // Callback when an MQTT message arrives for one of our subscriptions
-  void callback(void* response) {
-    ELClientResponse *res = (ELClientResponse *)response;
-
-    Serial.print("Received: topic=");
-    String topic = res->popString();
-    Serial.println(topic);
-
-    Serial.print("data=");
-    String data = res->popString();
-    Serial.println(data);
-  }
-
-  void mqttPublished(void* response) {
-    Serial.println("MQTT published");
-  }
-
+  String ARDUINOHOST =  "ArduinoMyDomotic";
 #elif ETHERNETSUPPORT == 1
   /************************************************************************************************/
   /************************************************************************************************/
@@ -172,7 +101,7 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
   PubSubClient client_mqtt(ethClient);
   long lastReconnectAttempt = 0;
   const int WL_MAC_ADDR_LENGTH = 6;
-  const String ARDUINOHOST =  ArduinoHostName +
+  String ARDUINOHOST =  ArduinoHostName +
                               String(mac[WL_MAC_ADDR_LENGTH - 3], HEX) +
                               String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) +
                               String(mac[WL_MAC_ADDR_LENGTH - 1], HEX) ;
@@ -181,7 +110,6 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
   /************************************************************************************************/
   /************************************************************************************************/
 
-
   boolean reconnect() {
     if (client_mqtt.connect((char*)ARDUINOHOST.c_str())) {
       String json = "{\"host\":\"" + ARDUINOHOST + "\", \"state\":\"connect\",\"ip\": \"" + Ethernet.localIP() + "\"}";
@@ -189,7 +117,7 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
       client_mqtt.publish("out", (char*)json.c_str());
       // RI/CREA LE subscribe PER MQTT
 
-      for (int i = 0; i < sizeof_mydomotic_obj; i++) {
+      for (int i = 0; i < count_digital_input; i++) {
         client_mqtt.subscribe((char *)mydomotic_obj[i].getTopic().c_str());
       }
     }
@@ -197,16 +125,14 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
   }
 
   void callback(char* topicRecive, byte* payload, unsigned int length) {
-    //DEBUG STAMPA COSA ARRIVA SU MQTT
-    if(DEBUG_SERIAL) Serial.print("MQTT Message arrived [");
-    if(DEBUG_SERIAL) Serial.print(topicRecive);
-    if(DEBUG_SERIAL) Serial.print("] ");
+    // DEBUG STAMPA COSA ARRIVA SU MQTT
+    PrintDEBUG("MQTT Message arrived [" + (String) topicRecive + "] ",0);
     for (int i = 0; (unsigned) i < length; i++) {
-      Serial.print((char) payload[i]);
+      PrintDEBUG((String) payload[i],0);
     }
-    if(DEBUG_SERIAL) Serial.println();
+    PrintDEBUG("");
     // CERCA L'OGGETTO MYDOMOTIC CON IL TOPIC RICEVUTO
-    for (int i = 0; i < sizeof_mydomotic_obj; i++) {
+    for (int i = 0; i < count_digital_input; i++) {
       String topic = mydomotic_obj[i].getTopic();
       if (String(topicRecive) == topic) {
         if(payload[0] == '0'){
@@ -219,121 +145,253 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
       }
     }
   }
+#elif ETHERNETSUPPORT == 2
+    String ARDUINOHOST =  "ArduinoESP";
+
+    ELClient esp(&Serial, &Serial);
+    ELClientMqtt client_mqtt(&esp);                   // Initialize the MQTT client
+    bool connected;
+    ELClientWebServer client_webserver(&esp);         // Initialize the Web-Server client
+
+    void wifiCb(void* response) {
+      ELClientResponse *res = (ELClientResponse*)response;
+      if (res->argc() == 1) {
+        uint8_t status;
+        res->popArg(&status, 1);
+
+        if(status == STATION_GOT_IP) {
+          PrintINFO("WIFI CONNECTED");
+        } else {
+          PrintINFO("WIFI NOT READY: ",0);
+          PrintINFO((String) status);
+        }
+      }
+    }
+
+    // Callback when MQTT is connected
+    void mqttConnected(void* response) {
+      for (int i = 0; i < count_digital_input; i++) {
+        client_mqtt.subscribe(mydomotic_obj[i].getTopic().c_str());
+      }
+      connected = true;
+    }
+
+    // Callback when MQTT is disconnected
+    void mqttDisconnected(void* response) {
+      connected = false;
+    }
+
+    // Callback when an MQTT message arrives for one of our subscriptions
+    void callback(void* response) {
+      ELClientResponse *res = (ELClientResponse *)response;
+
+      PrintDEBUG("Received: topic=");
+      String topic = res->popString();
+      PrintDEBUG(topic);
+
+      PrintDEBUG("data=");
+      String data = res->popString();
+      PrintDEBUG(data);
+    }
+
+    void mqttPublished(void* response) {
+      PrintDEBUG("MQTT published");
+    }
+
+    void resetCb(void) {
+      bool ok = false;
+      do {
+        PrintINFO("EL-Client (re-)starting!");
+        ok = esp.Sync();
+      } while(!ok);
+      PrintINFO("EL-Client synced!");
+      client_webserver.setup();
+      client_mqtt.setup();
+    }
+
+    void mydomoticRefreshCb(char * url) {
+      String h = (String) arduino_setting.hostname;
+      String t = (String) arduino_setting.topic;
+      String cmdmqtt = "cmd/" + t + "/";
+      String statmqtt = "stat/" + t + "/";
+      String d;
+      if (arduino_setting.debug) {
+        d = "ON";
+      } else {
+        d = "OFF";
+      }
+      String b = (String) BOARDNAMETYPE;
+      client_webserver.setArgJson(F("arduinohostname"), Str2Json(h).begin());
+      client_webserver.setArgJson(F("debug"), Str2Json(d).begin());
+      client_webserver.setArgJson(F("board"), Str2Json(b).begin());
+      client_webserver.setArgJson(F("topic"), Str2Json(t).begin());
+      client_webserver.setArgJson(F("cmdmqtt"), Str2Json(cmdmqtt).begin());
+      client_webserver.setArgJson(F("statmqtt"), Str2Json(statmqtt).begin());
+      /*
+      String table = "[";
+      table = table + "[" + \
+          "  \"Indice\"" + \
+          ", \"IDX\"" + \
+          ", \"Label\"" + \
+          ", \"Address\"" + \
+          ", \"Button\"" + \
+          ", \"Type\"" + \
+          ", \"Relay\"" + \
+          ", \"Time\"" + \
+          ", \"Status\"" + \
+          "]";
+      //for(int i=0; i<count_digital_input; i++){
+      for(int i=0; i<8; i++){
+        MyDomoticSetting settings_data = mydomotic_obj[i].get_setting();
+        table = table + ",[" + \
+          "  \"" + (String) i + "\"" + \
+          ", \"" + (String) settings_data.idx + "\"" + \
+          ", \"" + (String) settings_data.label + "\"" + \
+          ", \"" + (String) settings_data.eepromAddress + "\"" + \
+          ", \"" + (String) settings_data.btn + "\"" + \
+          ", \"" + (String) mydomotic_obj[i].type_to_str() + "\"" + \
+          ", \"" + (String) settings_data.arrayled[0] + "\"" + \
+          ", \"" + (String) settings_data.period + "\"" + \
+          ", \"" + (String) mydomotic_obj[i].get_status() + "\"" + \
+          "]";
+        String label_id             = "idELC" + (String) i;
+        String label_idx            = "idxELC" + (String) i;
+        String label_label          = "labelELC" + (String) i;
+        String label_eepromAddress  = "eepromAddressELC" + (String) i;
+        String label_btn            = "btnELC" + (String) i;
+        String label_type           = "typeELC" + (String) i;
+        String label_arrayled0      = "arrayled0ELC" + (String) i;
+        String label_arrayled1      = "arrayled1ELC" + (String) i;
+        String label_period         = "periodELC" + (String) i;
+        String label_status         = "statusELC" + (String) i;
+        client_webserver.setArgJson((const char*) label_id.c_str(), Str2Json((String) i).begin());
+        client_webserver.setArgJson((const char*) label_idx.c_str(), Str2Json((String) settings_data.idx).begin());
+        client_webserver.setArgJson((const char*) label_label.c_str(), Str2Json((String) settings_data.label).begin());
+        client_webserver.setArgJson((const char*) label_eepromAddress.c_str(), Str2Json((String) settings_data.eepromAddress).begin());
+        client_webserver.setArgJson((const char*) label_btn.c_str(), Str2Json((String) settings_data.btn).begin());
+        client_webserver.setArgJson((const char*) label_type.c_str(), Str2Json((String) mydomotic_obj[i].type_to_str()).begin());
+        client_webserver.setArgJson((const char*) label_arrayled0.c_str(), Str2Json((String) settings_data.arrayled[0]).begin());
+        client_webserver.setArgJson((const char*) label_arrayled1.c_str(), Str2Json((String) settings_data.arrayled[1]).begin());
+        client_webserver.setArgJson((const char*) label_period.c_str(), Str2Json((String) settings_data.period).begin());
+        client_webserver.setArgJson((const char*) label_status.c_str(), Str2Json((String) mydomotic_obj[i].get_status()).begin());
+      }
+      table = table + "]";
+      //PrintINFO(table);
+      table = Str2Json(table);
+      client_webserver.setArgJson(F("tableobj"), table.begin());
+      */
+    }
+
+    void mydomoticDebugButtonPressCb(char * button){
+      String btn = button;
+      if( btn == F("debugchange") )
+      {
+        if(arduino_setting.debug){
+          arduino_setting.debug = false;
+          SaveData(arduino_setting);
+        } else {
+          arduino_setting.debug = true;
+          SaveData(arduino_setting);
+        }
+      }
+      else if( btn == F("debug_off") )
+      {
+        arduino_setting.debug = false;
+        SaveData(arduino_setting);
+      }
+    }
+
+    // called at page loading
+    void mydomoticLoadCb(char * url)
+    {
+      mydomoticRefreshCb( url );
+    }
+
+    void mydomoticSetFieldCb(const char * field)
+    {
+      String fld = field;
+      if( fld == F("topic")){
+        String topic;
+        topic = client_webserver.getArgString();
+        topic.toCharArray(arduino_setting.topic, topic.length()+1);
+        SaveData(arduino_setting);
+      }else if( fld == F("arduinohostname")){
+        String arduinohostname;
+        arduinohostname = client_webserver.getArgString();
+        arduinohostname.toCharArray(arduino_setting.hostname, arduinohostname.length()+1);
+        SaveData(arduino_setting);
+      }
+      /*
+      else if( fld == F("last_name"))
+        userWriteStr(client_webserver.getArgString(), EEPROM_POS_LAST_NAME);
+      else if( fld == F("age"))
+        EEPROM.update(EEPROM_POS_AGE, (uint8_t)client_webserver.getArgInt());
+      else if( fld == F("gender"))
+      {
+        String gender = client_webserver.getArgString();
+        EEPROM.update(EEPROM_POS_GENDER, (gender == F("male")) ? 'm' : 'f');
+      }
+      else if( fld == F("notifications"))
+        EEPROM.update(EEPROM_POS_NOTIFICATIONS, webServer.getArgBoolean());
+        */
+    }
+
+
 #endif
 
-
-
-
-
-void verifica_reset_data(){
-  pinMode(13, INPUT_PULLUP);
-  int resetlevel = digitalRead(13);
-  if (resetlevel == LOW){
-    if(DEBUG_SERIAL) Serial.print("RESET MODE Request... wait ");
-    if(DEBUG_SERIAL) Serial.print(RESET_TIMEOUT);
-    if(DEBUG_SERIAL) Serial.println("s before remove all");
-    for (int i=0;i<RESET_TIMEOUT;i++){
-      if(DEBUG_SERIAL) Serial.print((RESET_TIMEOUT-i));
-      if(DEBUG_SERIAL) Serial.println("s");
-      delay(1000);
-    }
-
-    if (resetlevel == LOW){
-      if(DEBUG_SERIAL) Serial.println("RESET MODE Initialize:");
-      int printvar = 0;
-      for (unsigned int i = 0 ; i < EEPROM.length() ; i++) {
-        if(DEBUG_SERIAL) Serial.print(".");
-        printvar ++;
-        if (printvar == 32){
-          printvar=0;
-          if(DEBUG_SERIAL) Serial.println("");
-        }
-        EEPROM.write(i, 0);
-      }
-      if(DEBUG_SERIAL) Serial.println("");
-      if(DEBUG_SERIAL) Serial.println("");
-      if(DEBUG_SERIAL) Serial.println("Done!");
-      if(DEBUG_SERIAL) Serial.println("ALL DATA RESET");
-      arduino_setting.hostname = ARDUINOHOST;
-      EEPROM.put(eepromAddress, arduino_setting);
-      eepromAddress = eepromAddress + sizeof(ArduinoSetting);
-      for(int i=0; i<count_digital_input; i++){
-        int digital_output_status;
-        EEPROM.put(eepromAddress, digital_output_status);
-        eepromAddress = eepromAddress + sizeof(int);
-      }
-    }
-  }
-
-}
-
-void load_stored_data(){
-  EEPROM.get(eepromAddress, arduino_setting);
-}
-
 void setup() {
-  if(DEBUG_SERIAL) Serial.begin(115200);
+  Serial.begin(115200);
 
   verifica_reset_data();
+  //set_initial_data();
   load_stored_data();
 
-  if(DEBUG_SERIAL) Serial.println("Starting..." + ARDUINOHOST);
+  PrintINFO("",1,false);
+  PrintINFO("Starting system...");
+  PrintINFO("",1,false);
 
   //CHIAMATA AL SETUP DEGLI OGGETTI
-  for (int i = 0; i < sizeof_mydomotic_obj; i++) {
+  for (int i = 0; i < count_digital_input; i++) {
     //CHIAMATA AL SETUP DEGLI OGGETTI
     mydomotic_obj[i].setup();
   }
 
   #if ETHERNETSUPPORT  == 1
     //ATTENDE L'IP DAL DHCP
-    if(DEBUG_SERIAL) Serial.println("Attempting IP...");
+    DPrintln("Attempting IP...");
     if(DHCP_ENABLE){
       if (Ethernet.begin(mac) == 0) {
-        if(DEBUG_SERIAL) Serial.println("Failed to configure Ethernet using DHCP");
+        DPrintln("Failed to configure Ethernet using DHCP");
         Ethernet.begin(mac, ip);
       }
     }else{
       Ethernet.begin(mac, ip);
     }
-    if(DEBUG_SERIAL) Serial.print("LocalIP: ");
-    if(DEBUG_SERIAL) Serial.println(Ethernet.localIP());
+    DPrint("LocalIP: ");
+    DPrintln((String) Ethernet.localIP());
     client_mqtt.setServer(server_mqtt, 1883);
     client_mqtt.setCallback(callback);
     reconnect();
   #elif ETHERNETSUPPORT  == 2
-    if(DEBUG_SERIAL) Serial.println("EL-Client starting!");
+    PrintINFO("EL-Client starting!");
+    esp.resetCb = resetCb;
 
-    // Sync-up with esp-link, this is required at the start of any sketch and initializes the
-    // callbacks to the wifi status change callback. The callback gets called with the initial
-    // status right after Sync() below completes.
-    esp.wifiCb.attach(wifiCb); // wifi status change callback, optional (delete if not desired)
-    bool ok;
-    do {
-      ok = esp.Sync();      // sync up with esp-link, blocks for up to 2 seconds
-      if (!ok) Serial.println("EL-Client sync failed!");
-    } while(!ok);
-    if(DEBUG_SERIAL) Serial.println("EL-Client synced!");
+    URLHandler *mydomotic_status = client_webserver.createURLHandler(F("/MyDStatus.html.json"));
+    mydomotic_status->loadCb.attach(mydomoticLoadCb);
+    mydomotic_status->refreshCb.attach(mydomoticRefreshCb);
+    mydomotic_status->setFieldCb.attach(mydomoticSetFieldCb);
+    mydomotic_status->buttonCb.attach(mydomoticDebugButtonPressCb);
 
-    // Set-up callbacks for events and initialize with es-link.
-    client_mqtt.connectedCb.attach(mqttConnected);
-    client_mqtt.disconnectedCb.attach(mqttDisconnected);
-    client_mqtt.publishedCb.attach(mqttPublished);
-    client_mqtt.dataCb.attach(callback);
-    client_mqtt.setup();
 
-    //Serial.println("ARDUINO: setup mqtt lwt");
-    //mqtt.lwt("/lwt", "offline", 0, 0); //or mqtt.lwt("/lwt", "offline");
-
-    Serial.println("EL-MQTT ready");
+    resetCb();
   #endif
-
-  if(DEBUG_SERIAL) Serial.println("SYSTEM STARTED!");
+  PrintINFO("HOSTNAME: " + (String) arduino_setting.hostname);
+  PrintINFO("SYSTEM STARTED!");
 }
 
 
 void loop() {
-  for (int i = 0; i < sizeof_mydomotic_obj; i++) {
+  for (int i = 0; i < count_digital_input; i++) {
     mydomotic_obj[i].loop();
   }
   #if ETHERNETSUPPORT == 1
@@ -342,7 +400,7 @@ void loop() {
       if (now - lastReconnectAttempt > 5000) {
         lastReconnectAttempt = now;
         // Attempt to reconnect
-        if(DEBUG_SERIAL) Serial.println("MQTT Reconnect!");
+        DPrintln("MQTT Reconnect!");
         if (reconnect()) {
           lastReconnectAttempt = 0;
         }
@@ -353,7 +411,43 @@ void loop() {
     }
   #elif ETHERNETSUPPORT == 2
     esp.Process();
-    delay(1);
   #endif
-  delay(1);
+
+  #if ETHERNETSUPPORT == 0
+    //EVENTO DI RICEZIONE COMANDI DALLA SERIALE
+    if (inputSerialStringComplete) {
+      DCommand(inputSerialCommand, inputSerialData);
+      if(inputSerialData != "") {
+        inputSerialData = "";
+      }
+      inputSerialCommand = "";
+      inputSerialStringComplete = false;
+      inputSerialDataFound = false;
+    }
+  #endif
 }
+
+#if ETHERNETSUPPORT == 0
+  void serialEvent() {
+    while (Serial.available()) {
+      char inChar = (char) Serial.read();
+      bool addtostring = true;
+      switch (inChar) {
+        case ' ':
+          inputSerialDataFound = true;
+          addtostring=false;
+        break;
+        case '\n':
+          inputSerialStringComplete = true;
+          addtostring=false;
+        break;
+      }
+      if(!inputSerialDataFound && addtostring) {
+        inputSerialCommand += inChar;
+      }
+      if(inputSerialDataFound && addtostring) {
+        inputSerialData += inChar;
+      }
+    }
+  }
+#endif
