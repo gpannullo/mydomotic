@@ -1,0 +1,29 @@
+    <!-- EspLink will add header here -->
+
+    <meta name="refresh-rate" content="5000" />
+
+    <div class="header">
+      <h1>MyDomotic Status</h1>
+    </div>
+
+    <div class="content">
+      <h2>Board Settings</h2>
+      <form>
+      <table align="center" width="100%" class="pure-table pure-table-bordered" >
+        <tr><th>Hostname</th><td id="arduinohostname" colspan="2"></td></tr>
+        <tr><th>Board</th><td id="board" colspan="2"></td></tr>
+        <tr><th>Topic MQTT</th><td id="topic"></td><td><input name="topic" type="text" style="width:80%"/><input type="submit" value="Save"></td></tr>
+        <tr><th>Debug</th><td>
+          <button id="debugchange" type="button">Change</button>
+        </td><td id="debug"></td></tr>
+      </table>
+      <input type="submit" value="Save">
+      </form>
+      <h2>TOPIC MQTT available</h2>
+      <table align="center" width="100%" class="pure-table pure-table-bordered" >
+        <tr><th>CMD MQTT</th><td id="cmdmqtt"></td></tr>
+        <tr><th>STATUS MQTT</th><td id="statmqtt"></td></tr>
+        </tr>
+      </table>
+    </div>
+</body></html>
