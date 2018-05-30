@@ -50,7 +50,6 @@ private:
       PubSubClient *client;
     #endif
     bool client_mqtt_enable = false;
-    String ArduinoHost;
     String status_led;
 
 

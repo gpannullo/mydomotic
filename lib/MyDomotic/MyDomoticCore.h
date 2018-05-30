@@ -8,6 +8,9 @@ struct ArduinoSetting {
   char hostname[50];
   char topic[50];
   boolean debug;
+  boolean domoticz;
+  char domoticz_in[100];
+  char domoticz_out[100];
 };
 
 struct MyDomoticSetting {

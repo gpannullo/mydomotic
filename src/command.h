@@ -63,12 +63,15 @@ void set_initial_data(){
   PrintINFO("",1,false);
   PrintINFO("LOADING Initial DATA Setting... ",0);
   int localeepromAddress=0;
-  PrintDEBUG("Actual eepromAddress: " + (String) localeepromAddress);
+  //PrintDEBUG("Actual eepromAddress: " + (String) localeepromAddress);
   ArduinoSetting arduino_setting_tmp;
   ARDUINOHOST.toCharArray(arduino_setting_tmp.hostname, ARDUINOHOST.length()+1);
   arduino_setting_tmp.debug = DEBUG_SERIAL;
+  arduino_setting_tmp.domoticz = true;
   arduino_setting_tmp.eepromAddress=localeepromAddress;
   strncpy(arduino_setting_tmp.topic, "arduino_t", sizeof(arduino_setting_tmp.topic));
+  strncpy(arduino_setting_tmp.domoticz_in, "domoticz/in", sizeof(arduino_setting_tmp.domoticz_in));
+  strncpy(arduino_setting_tmp.domoticz_out, "domoticz/out", sizeof(arduino_setting_tmp.domoticz_out));
   EEPROM.put(localeepromAddress, arduino_setting_tmp);
   PrintINFO("DONE!",1,false);
   localeepromAddress += sizeof(ArduinoSetting);
@@ -90,7 +93,7 @@ void set_initial_data(){
           };
     EEPROM.put(localeepromAddress, data_tmp);
     localeepromAddress += sizeof(MyDomoticSetting);
-    PrintDEBUG("Actual eepromAddress: " + (String) localeepromAddress);
+    //PrintDEBUG("Actual eepromAddress: " + (String) localeepromAddress);
     PrintINFO(".",0,false);
   }
   PrintINFO("DONE!",1,false);
@@ -154,4 +157,16 @@ void load_stored_data(){
   }
   Serial.println(" done!");
   DPrintln("");
+}
+
+String mqtt_topic_cmd(){
+  return "cmd/" + (String) arduino_setting.topic;
+}
+
+String mqtt_topic_stat(){
+  return "stat/" + (String) arduino_setting.topic;
+}
+
+String mqtt_topic_status(){
+    return mqtt_topic_stat() + "/STATUS";
 }

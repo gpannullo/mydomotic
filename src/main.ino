@@ -28,6 +28,8 @@ String inputSerialData                = "";     // a string to hold incoming dat
 boolean inputSerialStringComplete     = false;  // whether the string is complete
 boolean inputSerialDataFound          = false;  // whether the string is complete
 ArduinoSetting arduino_setting;
+AsyncDelay status_time;
+long status_time_refresh              = (1000L * 5);
 
 /****************************************
   Define board pins input/output count
@@ -170,6 +172,8 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
 
     // Callback when MQTT is connected
     void mqttConnected(void* response) {
+      client_mqtt.subscribe(mqtt_topic_cmd().c_str());
+
       for (int i = 0; i < count_digital_input; i++) {
         client_mqtt.subscribe(mydomotic_obj[i].getTopic().c_str());
       }
@@ -212,17 +216,28 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
     void mydomoticRefreshCb(char * url) {
       String h = (String) arduino_setting.hostname;
       String t = (String) arduino_setting.topic;
-      String cmdmqtt = "cmd/" + t + "/";
-      String statmqtt = "stat/" + t + "/";
+      String din = (String) arduino_setting.domoticz_in;
+      String dout = (String) arduino_setting.domoticz_out;
+      String cmdmqtt = mqtt_topic_cmd();
+      String statmqtt = mqtt_topic_stat();
       String d;
       if (arduino_setting.debug) {
         d = "ON";
       } else {
         d = "OFF";
       }
+      String d1;
+      if (arduino_setting.domoticz) {
+        d1 = "ON";
+      } else {
+        d1 = "OFF";
+      }
       String b = (String) BOARDNAMETYPE;
       client_webserver.setArgJson(F("arduinohostname"), Str2Json(h).begin());
       client_webserver.setArgJson(F("debug"), Str2Json(d).begin());
+      client_webserver.setArgJson(F("domoticz"), Str2Json(d1).begin());
+      client_webserver.setArgJson(F("din"), Str2Json(din).begin());
+      client_webserver.setArgJson(F("dout"), Str2Json(dout).begin());
       client_webserver.setArgJson(F("board"), Str2Json(b).begin());
       client_webserver.setArgJson(F("topic"), Str2Json(t).begin());
       client_webserver.setArgJson(F("cmdmqtt"), Str2Json(cmdmqtt).begin());
@@ -284,8 +299,7 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
 
     void mydomoticDebugButtonPressCb(char * button){
       String btn = button;
-      if( btn == F("debugchange") )
-      {
+      if( btn == F("debugchange") ) {
         if(arduino_setting.debug){
           arduino_setting.debug = false;
           SaveData(arduino_setting);
@@ -293,11 +307,14 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
           arduino_setting.debug = true;
           SaveData(arduino_setting);
         }
-      }
-      else if( btn == F("debug_off") )
-      {
-        arduino_setting.debug = false;
-        SaveData(arduino_setting);
+      } else if( btn == F("domoticzchange") ){
+        if (arduino_setting.domoticz) {
+          arduino_setting.domoticz = false;
+          SaveData(arduino_setting);
+        } else {
+          arduino_setting.domoticz = true;
+          SaveData(arduino_setting);
+        }
       }
     }
 
@@ -307,7 +324,7 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
       mydomoticRefreshCb( url );
     }
 
-    void mydomoticSetFieldCb(const char * field)
+    void mydomoticSetFieldCb(char * field)
     {
       String fld = field;
       if( fld == F("topic")){
@@ -315,10 +332,20 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
         topic = client_webserver.getArgString();
         topic.toCharArray(arduino_setting.topic, topic.length()+1);
         SaveData(arduino_setting);
-      }else if( fld == F("arduinohostname")){
+      } else if( fld == F("arduinohostname")){
         String arduinohostname;
         arduinohostname = client_webserver.getArgString();
         arduinohostname.toCharArray(arduino_setting.hostname, arduinohostname.length()+1);
+        SaveData(arduino_setting);
+      } else if( fld == F("din")){
+        String stringa;
+        stringa = client_webserver.getArgString();
+        stringa.toCharArray(arduino_setting.domoticz_in, stringa.length()+1);
+        SaveData(arduino_setting);
+      } else if( fld == F("dout")){
+        String stringa;
+        stringa = client_webserver.getArgString();
+        stringa.toCharArray(arduino_setting.domoticz_out, stringa.length()+1);
         SaveData(arduino_setting);
       }
       /*
@@ -382,15 +409,25 @@ void setup() {
     mydomotic_status->setFieldCb.attach(mydomoticSetFieldCb);
     mydomotic_status->buttonCb.attach(mydomoticDebugButtonPressCb);
 
+    client_mqtt.connectedCb.attach(mqttConnected);
+    client_mqtt.disconnectedCb.attach(mqttDisconnected);
+    client_mqtt.publishedCb.attach(mqttPublished);
+    client_mqtt.dataCb.attach(callback);
 
     resetCb();
   #endif
+  status_time.start(status_time_refresh, AsyncDelay::MILLIS);
   PrintINFO("HOSTNAME: " + (String) arduino_setting.hostname);
   PrintINFO("SYSTEM STARTED!");
 }
 
 
 void loop() {
+  if (status_time.isExpired()) {
+    client_mqtt.publish(mqtt_topic_status().c_str(),"11");
+    PrintINFO(mqtt_topic_status());
+    status_time.repeat();
+  }
   for (int i = 0; i < count_digital_input; i++) {
     mydomotic_obj[i].loop();
   }

@@ -12,7 +12,6 @@ MyDomotic::MyDomotic() {
 MyDomotic::MyDomotic(MyDomoticSetting data) {
   this->data = data;
   this->status_led = "";
-  this->ArduinoHost = (String) arduino_setting.hostname;
 }
 
 MyDomotic::MyDomotic(String label, int btn, int led)
@@ -23,7 +22,6 @@ MyDomotic::MyDomotic(String label, int btn, int led)
   this->data.type_object = MYD_TYPE_SWITCH;
   this->status_led = "";
   label.toCharArray(this->data.label, label.length()+1);
-  this->ArduinoHost = (String) arduino_setting.hostname;
 }
 
 MyDomotic::MyDomotic(String label, int btn, int led, long period)
@@ -34,7 +32,6 @@ MyDomotic::MyDomotic(String label, int btn, int led, long period)
   this->data.type_object = MYD_TYPE_SWITCH;
   this->status_led = "";
   label.toCharArray(this->data.label, label.length()+1);
-  this->ArduinoHost = (String) arduino_setting.hostname;
 }
 
 MyDomotic::MyDomotic(String label, int btn, int led, long period, int led_check) {
@@ -45,7 +42,6 @@ MyDomotic::MyDomotic(String label, int btn, int led, long period, int led_check)
   this->data.type_object = MYD_TYPE_BLIND;
   this->status_led = "";
   label.toCharArray(this->data.label, label.length()+1);
-  this->ArduinoHost = (String) arduino_setting.hostname;
 }
 
 MyDomoticSetting MyDomotic::get_setting(void) {
@@ -178,7 +174,7 @@ void MyDomotic::loop(void)
 String MyDomotic::getTopic(void) {
   // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
   // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
-  return this->ArduinoHost + "/action/" + (String) this->data.btn;
+  return "cmd/" + (String) arduino_setting.topic + "/action/" + (String) this->data.btn;
 }
 
 void MyDomotic::setup_switch(void) {
@@ -290,7 +286,7 @@ void MyDomotic::SetLed(int LED, int level) {
   delay(10);
   digitalWrite(LED, level);
   this->save();
-  String json = "{\"host\":\"" + this->ArduinoHost + "\", " +
+  String json = "{\"host\":\"" + (String) arduino_setting.hostname + "\", " +
                 "\"state\":\"ready\", " +
                 "\"led\":\"" + LED + "\", " +
                 "\"btn\":\"" + this->data.btn + "\", " +
