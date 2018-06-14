@@ -10,7 +10,7 @@
 
 #include "command.h"
 #include "platform.h"
-bool DEBUG_SERIAL = true;
+#include <ArduinoJson.h>
 
 /************************************************************************************************/
 /************************************************************************************************/
@@ -18,10 +18,11 @@ bool DEBUG_SERIAL = true;
 /************************************************************************************************/
 /************************************************************************************************/
 
+bool DEBUG_SERIAL                     = true;
+bool ENABLE_CONFIGURE                 = false;
 int eepromAddress                     = 0;
 const int RESET_TIMEOUT               = 10;
 const bool WaitTimeOutBeforeReset     = true;
-bool DEBUG_SERIAL_MYD                 = false;
 const int RESET_PIN_MODE              = 13;
 String inputSerialCommand             = "";     // a string to hold incoming data
 String inputSerialData                = "";     // a string to hold incoming data
@@ -29,7 +30,7 @@ boolean inputSerialStringComplete     = false;  // whether the string is complet
 boolean inputSerialDataFound          = false;  // whether the string is complete
 ArduinoSetting arduino_setting;
 AsyncDelay status_time;
-long status_time_refresh              = (1000L * 5);
+long status_time_refresh              = (1000L * 60);
 
 /****************************************
   Define board pins input/output count
@@ -150,7 +151,8 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
 #elif ETHERNETSUPPORT == 2
     String ARDUINOHOST =  "ArduinoESP";
 
-    ELClient esp(&Serial, &Serial);
+    ELClient esp(&Serial);
+
     ELClientMqtt client_mqtt(&esp);                   // Initialize the MQTT client
     bool connected;
     ELClientWebServer client_webserver(&esp);         // Initialize the Web-Server client
@@ -173,9 +175,11 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
     // Callback when MQTT is connected
     void mqttConnected(void* response) {
       client_mqtt.subscribe(mqtt_topic_cmd().c_str());
+      client_mqtt.subscribe(mqtt_topic_set().c_str());
 
       for (int i = 0; i < count_digital_input; i++) {
         client_mqtt.subscribe(mydomotic_obj[i].getTopic().c_str());
+        client_mqtt.subscribe(mydomotic_obj[i].setObj().c_str());
       }
       connected = true;
     }
@@ -188,14 +192,72 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
     // Callback when an MQTT message arrives for one of our subscriptions
     void callback(void* response) {
       ELClientResponse *res = (ELClientResponse *)response;
-
-      PrintDEBUG("Received: topic=");
       String topic = res->popString();
-      PrintDEBUG(topic);
-
-      PrintDEBUG("data=");
       String data = res->popString();
-      PrintDEBUG(data);
+      StaticJsonBuffer<200> jsonBuffer;
+
+
+      PrintDEBUG("MQTT Message arrived [" + topic + "]: DATA [" + data + "] ");
+      if (topic == mqtt_topic_cmd()){
+        /*
+        JsonObject& root = jsonBuffer.parseObject(data);
+        if (!root.success()) {
+          PrintINFO("Failed to load json from data");
+          return;
+        }
+        PrintINFO("Arrived a command");
+        PrintINFO(data);
+        */
+      }else if (topic == mqtt_topic_set()){
+        /*
+        JsonObject& root = jsonBuffer.parseObject(data);
+        if (!root.success()) {
+          PrintINFO("Failed to load json from data");
+          return;
+        }
+        PrintINFO("Arrived a SET");
+        PrintINFO(data);
+        if(root["id"] != "") PrintINFO(root["id"]);
+        if(root["label"] != "") PrintINFO(root["label"]);
+        if(root["led"][0] != "") PrintINFO(root["led"][0]);
+        if(root["led"][1] != "") PrintINFO(root["led"][1]);
+        */
+      }else{
+        // CERCA L'OGGETTO MYDOMOTIC CON IL TOPIC RICEVUTO
+        if(topic.substring(0,3) == PREFIX_SET.substring(0,3)){
+          for (int i = 0; i < count_digital_input; i++) {
+            if (mydomotic_obj[i].setObj() == topic) {
+              JsonObject& root = jsonBuffer.parseObject(data);
+              MyDomoticSetting dataobj = mydomotic_obj[i].get_setting();
+              if(root["label"] != "") strncpy(dataobj.label, root["label"], sizeof(dataobj.label));
+              if(root["led"] != "") dataobj.led = atoi(root["led"]);
+              if(root["period"] != "") dataobj.period = 1000L * atoi(root["period"]);
+              if(root["led_check"] != "") dataobj.led_check = atoi(root["led_check"]);
+              if(root["type_object"] != "") dataobj.type_object = atoi(root["type_object"]);
+              if(root["idx"] != "") dataobj.idx = atoi(root["idx"]);
+              dataobj._period_state = 0;
+              mydomotic_obj[i].set_setting(dataobj);
+              mydomotic_obj[i].setup();
+              i = count_digital_input;
+            }
+          }
+        } else if (topic.substring(0,3) == PREFIX_CMD.substring(0,3)){
+          for (int i = 0; i < count_digital_input; i++) {
+            if (mydomotic_obj[i].getTopic() == topic) {
+              if(data == "0"){
+                mydomotic_obj[i].off();
+                i = count_digital_input;
+              }else if(data == "1"){
+                mydomotic_obj[i].on();
+                i = count_digital_input;
+              }else if(data == "2"){
+                mydomotic_obj[i].action();
+                i = count_digital_input;
+              }
+            }
+          }
+        }
+      }
     }
 
     void mqttPublished(void* response) {
@@ -220,81 +282,22 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
       String dout = (String) arduino_setting.domoticz_out;
       String cmdmqtt = mqtt_topic_cmd();
       String statmqtt = mqtt_topic_stat();
-      String d;
-      if (arduino_setting.debug) {
-        d = "ON";
-      } else {
-        d = "OFF";
-      }
-      String d1;
-      if (arduino_setting.domoticz) {
-        d1 = "ON";
-      } else {
-        d1 = "OFF";
-      }
+      String setmqtt = mqtt_topic_set();
+      String d = bool2String(arduino_setting.debug);
+      String d1 = bool2String(arduino_setting.domoticz);
       String b = (String) BOARDNAMETYPE;
+      String configure_enable = bool2String(ENABLE_CONFIGURE);
       client_webserver.setArgJson(F("arduinohostname"), Str2Json(h).begin());
       client_webserver.setArgJson(F("debug"), Str2Json(d).begin());
       client_webserver.setArgJson(F("domoticz"), Str2Json(d1).begin());
+      client_webserver.setArgJson(F("configureenable"), Str2Json(configure_enable).begin());
       client_webserver.setArgJson(F("din"), Str2Json(din).begin());
       client_webserver.setArgJson(F("dout"), Str2Json(dout).begin());
       client_webserver.setArgJson(F("board"), Str2Json(b).begin());
       client_webserver.setArgJson(F("topic"), Str2Json(t).begin());
       client_webserver.setArgJson(F("cmdmqtt"), Str2Json(cmdmqtt).begin());
       client_webserver.setArgJson(F("statmqtt"), Str2Json(statmqtt).begin());
-      /*
-      String table = "[";
-      table = table + "[" + \
-          "  \"Indice\"" + \
-          ", \"IDX\"" + \
-          ", \"Label\"" + \
-          ", \"Address\"" + \
-          ", \"Button\"" + \
-          ", \"Type\"" + \
-          ", \"Relay\"" + \
-          ", \"Time\"" + \
-          ", \"Status\"" + \
-          "]";
-      //for(int i=0; i<count_digital_input; i++){
-      for(int i=0; i<8; i++){
-        MyDomoticSetting settings_data = mydomotic_obj[i].get_setting();
-        table = table + ",[" + \
-          "  \"" + (String) i + "\"" + \
-          ", \"" + (String) settings_data.idx + "\"" + \
-          ", \"" + (String) settings_data.label + "\"" + \
-          ", \"" + (String) settings_data.eepromAddress + "\"" + \
-          ", \"" + (String) settings_data.btn + "\"" + \
-          ", \"" + (String) mydomotic_obj[i].type_to_str() + "\"" + \
-          ", \"" + (String) settings_data.arrayled[0] + "\"" + \
-          ", \"" + (String) settings_data.period + "\"" + \
-          ", \"" + (String) mydomotic_obj[i].get_status() + "\"" + \
-          "]";
-        String label_id             = "idELC" + (String) i;
-        String label_idx            = "idxELC" + (String) i;
-        String label_label          = "labelELC" + (String) i;
-        String label_eepromAddress  = "eepromAddressELC" + (String) i;
-        String label_btn            = "btnELC" + (String) i;
-        String label_type           = "typeELC" + (String) i;
-        String label_arrayled0      = "arrayled0ELC" + (String) i;
-        String label_arrayled1      = "arrayled1ELC" + (String) i;
-        String label_period         = "periodELC" + (String) i;
-        String label_status         = "statusELC" + (String) i;
-        client_webserver.setArgJson((const char*) label_id.c_str(), Str2Json((String) i).begin());
-        client_webserver.setArgJson((const char*) label_idx.c_str(), Str2Json((String) settings_data.idx).begin());
-        client_webserver.setArgJson((const char*) label_label.c_str(), Str2Json((String) settings_data.label).begin());
-        client_webserver.setArgJson((const char*) label_eepromAddress.c_str(), Str2Json((String) settings_data.eepromAddress).begin());
-        client_webserver.setArgJson((const char*) label_btn.c_str(), Str2Json((String) settings_data.btn).begin());
-        client_webserver.setArgJson((const char*) label_type.c_str(), Str2Json((String) mydomotic_obj[i].type_to_str()).begin());
-        client_webserver.setArgJson((const char*) label_arrayled0.c_str(), Str2Json((String) settings_data.arrayled[0]).begin());
-        client_webserver.setArgJson((const char*) label_arrayled1.c_str(), Str2Json((String) settings_data.arrayled[1]).begin());
-        client_webserver.setArgJson((const char*) label_period.c_str(), Str2Json((String) settings_data.period).begin());
-        client_webserver.setArgJson((const char*) label_status.c_str(), Str2Json((String) mydomotic_obj[i].get_status()).begin());
-      }
-      table = table + "]";
-      //PrintINFO(table);
-      table = Str2Json(table);
-      client_webserver.setArgJson(F("tableobj"), table.begin());
-      */
+      client_webserver.setArgJson(F("setmqtt"), Str2Json(setmqtt).begin());
     }
 
     void mydomoticDebugButtonPressCb(char * button){
@@ -314,6 +317,12 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
         } else {
           arduino_setting.domoticz = true;
           SaveData(arduino_setting);
+        }
+      } else if( btn == F("configchange") ){
+        if (ENABLE_CONFIGURE) {
+          ENABLE_CONFIGURE = false;
+        } else {
+          ENABLE_CONFIGURE = true;
         }
       }
     }
@@ -348,19 +357,6 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
         stringa.toCharArray(arduino_setting.domoticz_out, stringa.length()+1);
         SaveData(arduino_setting);
       }
-      /*
-      else if( fld == F("last_name"))
-        userWriteStr(client_webserver.getArgString(), EEPROM_POS_LAST_NAME);
-      else if( fld == F("age"))
-        EEPROM.update(EEPROM_POS_AGE, (uint8_t)client_webserver.getArgInt());
-      else if( fld == F("gender"))
-      {
-        String gender = client_webserver.getArgString();
-        EEPROM.update(EEPROM_POS_GENDER, (gender == F("male")) ? 'm' : 'f');
-      }
-      else if( fld == F("notifications"))
-        EEPROM.update(EEPROM_POS_NOTIFICATIONS, webServer.getArgBoolean());
-        */
     }
 
 
@@ -416,6 +412,12 @@ void setup() {
 
     resetCb();
   #endif
+  #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
+  for (int i = 0; i < count_digital_input; i++) {
+    //CHIAMATA AL SETUP DEGLI OGGETTI
+    mydomotic_obj[i].mqttset(client_mqtt);
+  }
+  #endif
   status_time.start(status_time_refresh, AsyncDelay::MILLIS);
   PrintINFO("HOSTNAME: " + (String) arduino_setting.hostname);
   PrintINFO("SYSTEM STARTED!");
@@ -424,8 +426,10 @@ void setup() {
 
 void loop() {
   if (status_time.isExpired()) {
-    client_mqtt.publish(mqtt_topic_status().c_str(),"11");
-    PrintINFO(mqtt_topic_status());
+    client_mqtt.publish(mqtt_topic_status().c_str(),system_status().c_str());
+    for (int i = 0; i < count_digital_input; i++) {
+      client_mqtt.publish(mqtt_topic_status().c_str(),mydomotic_obj[i].to_json().c_str());
+    }
     status_time.repeat();
   }
   for (int i = 0; i < count_digital_input; i++) {

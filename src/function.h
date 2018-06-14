@@ -43,3 +43,11 @@ const String Str2Json(String a){
   a = "\"" + a + "\"";
   return a;
 }
+
+String bool2String(bool c){
+  if(c){
+    return "ON";
+  }else{
+    return "OFF";
+  }
+}

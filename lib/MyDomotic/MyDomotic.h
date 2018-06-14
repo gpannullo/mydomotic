@@ -23,7 +23,6 @@
   #include <ELClientCmd.h>
   #include <ELClientMqtt.h>
   #include <ELClientWebServer.h>
-  extern ELClientMqtt client_mqtt;
 #endif
 
 extern bool DEBUG_SERIAL_MYD;
@@ -50,6 +49,7 @@ private:
       PubSubClient *client;
     #endif
     bool client_mqtt_enable = false;
+    bool configuration_setup = false;
     String status_led;
 
 
@@ -79,10 +79,18 @@ public:
     void off(void);
     void lock(void);
     String getTopic(void);
+    String setObj(void);
     String get_status(void);
     String to_str(void);
     String type_to_str(void);
+    String to_json(void);
+    #if ETHERNETSUPPORT == 1
+      void mqttset(PubSubClient mqtt);
+    #elif ETHERNETSUPPORT == 2
+      void mqttset(ELClientMqtt mqtt);
+    #endif
     MyDomoticSetting get_setting(void);
+    void set_setting(MyDomoticSetting data);
     void save (void);
 };
 

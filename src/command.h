@@ -10,6 +10,7 @@ extern const int digital_output [];
 extern const int RESET_TIMEOUT;
 extern const bool WaitTimeOutBeforeReset;
 extern const int RESET_PIN_MODE;
+extern const String BOARDNAMETYPE;
 
 //COMANDI
 String CMD_HELP           = "?";
@@ -17,7 +18,7 @@ String CMD_DEBUG          = "DEBUG";
 String CMD_SETTINGS       = "SETTINGS";
 
 void SaveData(ArduinoSetting settings){
-  EEPROM.put(settings.eepromAddress, settings);
+  EEPROM.put(settings._eepromAddress, settings);
   PrintINFO(" ... SAVED!",1,false);
 }
 
@@ -46,7 +47,7 @@ void SaveData(ArduinoSetting settings){
       PrintCMD("************************************************");
       PrintCMD("HOST: " + (String) arduino_setting.hostname);
       PrintCMD("DEBUG: " + (String) arduino_setting.debug);
-      PrintCMD("eepromAddress: " + (String) arduino_setting.eepromAddress);
+      PrintCMD("eepromAddress: " + (String) arduino_setting._eepromAddress);
       PrintCMD("************************************************");
       PrintCMD(CMD_SETTINGS + ": MyDomotic");
       PrintCMD("Input Count: " + (String) count_digital_input);
@@ -68,7 +69,7 @@ void set_initial_data(){
   ARDUINOHOST.toCharArray(arduino_setting_tmp.hostname, ARDUINOHOST.length()+1);
   arduino_setting_tmp.debug = DEBUG_SERIAL;
   arduino_setting_tmp.domoticz = true;
-  arduino_setting_tmp.eepromAddress=localeepromAddress;
+  arduino_setting_tmp._eepromAddress=localeepromAddress;
   strncpy(arduino_setting_tmp.topic, "arduino_t", sizeof(arduino_setting_tmp.topic));
   strncpy(arduino_setting_tmp.domoticz_in, "domoticz/in", sizeof(arduino_setting_tmp.domoticz_in));
   strncpy(arduino_setting_tmp.domoticz_out, "domoticz/out", sizeof(arduino_setting_tmp.domoticz_out));
@@ -79,21 +80,19 @@ void set_initial_data(){
   PrintINFO("LOADING Initial MyDomotic data objects ", 0);
   for(int i=0; i<count_digital_input; i++){
     MyDomoticSetting data_tmp = {
-            i,
-            digital_input[i],
-            digital_output[i],0,
-            {digital_output[i],0},
-            0,
-            0,
-            0,
-            MYD_TYPE_SWITCH,
-            "BTN LABEL",
-            0,
-            localeepromAddress,
+            digital_output[i],0,    //led e led_check
+            0,                      //period timer
+            MYD_TYPE_SWITCH,        //type_object
+            "BTN LABEL",            //LABEL
+            0,                      //IDX
+            (i + 1),                //ID
+            digital_input[i],       //BTN
+            localeepromAddress,     //_eepromAddress
+            0,                      //_period_state
+            HIGH                    //_led_state
           };
     EEPROM.put(localeepromAddress, data_tmp);
     localeepromAddress += sizeof(MyDomoticSetting);
-    //PrintDEBUG("Actual eepromAddress: " + (String) localeepromAddress);
     PrintINFO(".",0,false);
   }
   PrintINFO("DONE!",1,false);
@@ -160,13 +159,26 @@ void load_stored_data(){
 }
 
 String mqtt_topic_cmd(){
-  return "cmd/" + (String) arduino_setting.topic;
+  return PREFIX_CMD + "/" + (String) arduino_setting.topic;
+}
+
+String mqtt_topic_set(){
+  return PREFIX_SET + "/" + (String) arduino_setting.topic;
 }
 
 String mqtt_topic_stat(){
-  return "stat/" + (String) arduino_setting.topic;
+  return PREFIX_STAT + "/" +  (String) arduino_setting.topic;
 }
 
 String mqtt_topic_status(){
     return mqtt_topic_stat() + "/STATUS";
+}
+
+String system_status(){
+    return  "{\"hostname\":\"" + (String) arduino_setting.hostname + "\"" +
+            ",\"board\":\"" + (String) BOARDNAMETYPE + "\"" +
+            ",\"topic\":\"" + (String) arduino_setting.topic + "\"" +
+            ",\"domoticz\":\"" + bool2String(arduino_setting.domoticz) + "\""+
+            ",\"debug\":\"" + bool2String(arduino_setting.debug) + "\""+
+            "}";
 }
