@@ -81,7 +81,7 @@ void MyDomotic::lock(void)
   delay(10);
   //this->SetLed(this->data.led, this->data.led_check);
   this->SetLed(this->data.led, HIGH);
-  if (this->data.type_object == MYD_TYPE_BLIND) {
+  if (this->data.type_object == MYD_TYPE_BLIND or this->data.type_object == MYD_TYPE_BLIND2) {
     delay(10);
     this->SetLed(this->data.led_check, HIGH);
   }
@@ -97,17 +97,30 @@ void MyDomotic::setup(void)
 {
   // PREVIENE CHE QUANDO UN PIN VIENE CONFIGURATO COME OUTPUT
   // POSSA ESSERE LOW E ACCENDERE IL RELE IN MANIERA NON CONTROLLATA
-  lock();
-  if (this->data.type_object == MYD_TYPE_SWITCH) {
-    setup_switch();
+  int type_object = this->data.type_object;
+  this->lock();
+  if (type_object == MYD_TYPE_SWITCH) {
+    this->setup_switch();
   }
-  else if (this->data.type_object == MYD_TYPE_BLIND) {
-    setup_blind();
+  else if (type_object == MYD_TYPE_BLIND or type_object == MYD_TYPE_BLIND2) {
+    this->setup_blind();
   }
-  else if (this->data.type_object == MYD_TYPE_COMPLEX) { //RDAM
+  else if (type_object == MYD_TYPE_COMPLEX) { //RDAM
     //setup_complex();
   }
   this->configuration_setup = true;
+}
+
+void MyDomotic::setup_switch(void) {
+  pinMode(this->data.led, OUTPUT);
+  pinMode(this->data.btn, INPUT_PULLUP);
+  this->btn_state = digitalRead(this->data.btn);
+  this->btn_read = this->btn_state;
+}
+
+void MyDomotic::setup_blind(void) {
+  this->setup_switch();
+  pinMode(this->data.led_check, OUTPUT);
 }
 
 
@@ -191,8 +204,8 @@ void MyDomotic::loop(void)
 {
   //VERIFICA SE IL TIMER HA FINITO
   if (this->delayled.isExpired() && digitalRead(this->data.led) == LOW && this->data.period > 0) {
-    this->SetLed(this->data.led, HIGH);
     this->status_led = "CLOSE";
+    this->SetLed(this->data.led, HIGH);
     if (arduino_setting.debug) Serial.println("END TIMER CLOSE LED: " + (String) this->data.led + " " + (String) this->data.label);
   }
   this->check_btn_state();
@@ -208,18 +221,6 @@ String MyDomotic::setObj(void) {
   // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
   // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
   return PREFIX_SET + "/" + (String) arduino_setting.topic + "/" + (String) this->data.id;
-}
-
-void MyDomotic::setup_switch(void) {
-  pinMode(this->data.led, OUTPUT);
-  pinMode(this->data.btn, INPUT_PULLUP);
-  this->btn_state = digitalRead(this->data.btn);
-  this->btn_read = this->btn_state;
-}
-
-void MyDomotic::setup_blind(void) {
-  this->setup_switch();
-  pinMode(this->data.led_check, OUTPUT);
 }
 
 /*
@@ -272,11 +273,11 @@ void MyDomotic::on(void) {
 void MyDomotic::change(void)
 {
   if (digitalRead(this->data.led) == HIGH) {
-    this->SetLed(this->data.led, LOW);
     this->status_led = "OPEN";
+    this->SetLed(this->data.led, LOW);
   } else {
-    this->SetLed(this->data.led, HIGH);
     this->status_led = "CLOSE";
+    this->SetLed(this->data.led, HIGH);
   }
 }
 
@@ -350,6 +351,6 @@ void MyDomotic::SetLed(int LED, int level) {
 
 // METODO PER CAMBIARE DI STATO UN LED
 void MyDomotic::save() {
-  this->data._led_state = digitalRead(this->data.led);
   EEPROM.put(this->data._eepromAddress, this->data);
+  Serial.println("Save id: " + (String) this->data.id);
 }

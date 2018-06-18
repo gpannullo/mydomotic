@@ -11,7 +11,7 @@
   const int digital_input [] =  {2,3,4,5};
   const int digital_output [] = {6,7,8,9};
   const int analogic_input [] = {A0,A1,A2,A3,A4,A5};
-  #if ETHERNETSUPPORT == 1
+  #if ETHERNETSUPPORT == 2
     const int custom_input [] = {10,11,12};
   #else
     const int custom_input [] = {};
@@ -21,7 +21,7 @@
   const int digital_input [] = {2,3,4,5};
   const int digital_output [] = {6,7,8,9};
   const int analogic_input [] = {A0,A1,A2,A3,A4,A5};
-  #if ETHERNETSUPPORT == 1
+  #if ETHERNETSUPPORT == 2
     const int custom_input [] = {10,11,12};
   #else
     const int custom_input [] = {};

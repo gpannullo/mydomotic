@@ -198,62 +198,39 @@ const int sizeof_mydomotic_obj = (int) sizeof(mydomotic_obj) / sizeof(MyDomotic)
 
 
       PrintDEBUG("MQTT Message arrived [" + topic + "]: DATA [" + data + "] ");
-      if (topic == mqtt_topic_cmd()){
-        /*
-        JsonObject& root = jsonBuffer.parseObject(data);
-        if (!root.success()) {
-          PrintINFO("Failed to load json from data");
-          return;
-        }
-        PrintINFO("Arrived a command");
-        PrintINFO(data);
-        */
-      }else if (topic == mqtt_topic_set()){
-        /*
-        JsonObject& root = jsonBuffer.parseObject(data);
-        if (!root.success()) {
-          PrintINFO("Failed to load json from data");
-          return;
-        }
-        PrintINFO("Arrived a SET");
-        PrintINFO(data);
-        if(root["id"] != "") PrintINFO(root["id"]);
-        if(root["label"] != "") PrintINFO(root["label"]);
-        if(root["led"][0] != "") PrintINFO(root["led"][0]);
-        if(root["led"][1] != "") PrintINFO(root["led"][1]);
-        */
-      }else{
-        // CERCA L'OGGETTO MYDOMOTIC CON IL TOPIC RICEVUTO
-        if(topic.substring(0,3) == PREFIX_SET.substring(0,3)){
-          for (int i = 0; i < count_digital_input; i++) {
-            if (mydomotic_obj[i].setObj() == topic) {
-              JsonObject& root = jsonBuffer.parseObject(data);
-              MyDomoticSetting dataobj = mydomotic_obj[i].get_setting();
-              if(root["label"] != "") strncpy(dataobj.label, root["label"], sizeof(dataobj.label));
-              if(root["led"] != "") dataobj.led = atoi(root["led"]);
-              if(root["period"] != "") dataobj.period = 1000L * atoi(root["period"]);
-              if(root["led_check"] != "") dataobj.led_check = atoi(root["led_check"]);
-              if(root["type_object"] != "") dataobj.type_object = atoi(root["type_object"]);
-              if(root["idx"] != "") dataobj.idx = atoi(root["idx"]);
-              dataobj._period_state = 0;
-              mydomotic_obj[i].set_setting(dataobj);
-              mydomotic_obj[i].setup();
-              i = count_digital_input;
-            }
+      // CERCA L'OGGETTO MYDOMOTIC CON IL TOPIC RICEVUTO
+      if(topic.substring(0,3) == PREFIX_SET.substring(0,3)){
+        for (int i = 0; i < count_digital_input; i++) {
+          if (mydomotic_obj[i].setObj() == topic) {
+            PrintINFO("TROVATO");
+            PrintINFO(mydomotic_obj[i].setObj());
+            JsonObject& root = jsonBuffer.parseObject(data);
+            MyDomoticSetting dataobj = mydomotic_obj[i].get_setting();
+            if(root["label"] != "") strncpy(dataobj.label, root["label"], sizeof(dataobj.label));
+            if(root["led"] != "") dataobj.led = atoi(root["led"]);
+            if(root["period"] != "") dataobj.period = 1000L * atoi(root["period"]);
+            if(root["led_check"] != "") dataobj.led_check = atoi(root["led_check"]);
+            if(root["type_object"] != "") dataobj.type_object = atoi(root["type_object"]);
+            if(root["idx"] != "") dataobj.idx = atoi(root["idx"]);
+            dataobj._period_state = 0;
+            mydomotic_obj[i].set_setting(dataobj);
+            mydomotic_obj[i].setup();
+            i = count_digital_input;
+            break;
           }
-        } else if (topic.substring(0,3) == PREFIX_CMD.substring(0,3)){
-          for (int i = 0; i < count_digital_input; i++) {
-            if (mydomotic_obj[i].getTopic() == topic) {
-              if(data == "0"){
-                mydomotic_obj[i].off();
-                i = count_digital_input;
-              }else if(data == "1"){
-                mydomotic_obj[i].on();
-                i = count_digital_input;
-              }else if(data == "2"){
-                mydomotic_obj[i].action();
-                i = count_digital_input;
-              }
+        }
+      } else if (topic.substring(0,3) == PREFIX_CMD.substring(0,3)){
+        for (int i = 0; i < count_digital_input; i++) {
+          if (mydomotic_obj[i].getTopic() == topic) {
+            if(data == "0"){
+              mydomotic_obj[i].off();
+              i = count_digital_input;
+            }else if(data == "1"){
+              mydomotic_obj[i].on();
+              i = count_digital_input;
+            }else if(data == "2"){
+              mydomotic_obj[i].action();
+              i = count_digital_input;
             }
           }
         }
@@ -425,6 +402,7 @@ void setup() {
 
 
 void loop() {
+  #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
   if (status_time.isExpired()) {
     client_mqtt.publish(mqtt_topic_status().c_str(),system_status().c_str());
     for (int i = 0; i < count_digital_input; i++) {
@@ -432,6 +410,7 @@ void loop() {
     }
     status_time.repeat();
   }
+  #endif
   for (int i = 0; i < count_digital_input; i++) {
     mydomotic_obj[i].loop();
   }
