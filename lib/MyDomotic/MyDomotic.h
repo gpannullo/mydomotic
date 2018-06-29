@@ -12,6 +12,7 @@
 #include <Arduino.h>
 #include <AsyncDelay.h>
 #include <EEPROM.h>
+#include <ArduinoJson.h>
 #include "MyDomoticCore.h"
 
 #if ETHERNETSUPPORT == 1
@@ -20,13 +21,14 @@
   extern const bool NETWORK_ENABLE;
 #elif ETHERNETSUPPORT == 2
   #include <ELClient.h>
-  #include <ELClientCmd.h>
+  //#include <ELClientCmd.h>
   #include <ELClientMqtt.h>
   #include <ELClientWebServer.h>
 #endif
 
 extern bool DEBUG_SERIAL_MYD;
 extern bool DEBUG_SERIAL;
+extern bool ENABLE_CONFIGURE;
 extern String ARDUINOHOST;
 extern ArduinoSetting arduino_setting;
 
@@ -89,10 +91,13 @@ public:
     #elif ETHERNETSUPPORT == 2
       void mqttset(ELClientMqtt mqtt);
     #endif
-    MyDomoticSetting get_setting(void);
     void set_setting(MyDomoticSetting data);
+    MyDomoticSetting get_setting(void);
+    void loadingData(String data);
     void save (void);
 };
+
+
 
 
 

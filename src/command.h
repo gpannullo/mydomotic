@@ -1,12 +1,16 @@
 #include <Arduino.h>
-#include <EEPROM.h>
+#include <ArduinoJson.h>
 #include "MyDomotic.h"
+#include "CustomBtn.h"
 #include "function.h"
 
 extern const int count_digital_input;
+extern const int count_custom_input;
 extern MyDomotic mydomotic_obj [];
+extern CustomBtn mydomotic_custom_obj [];
 extern const int digital_input [];
 extern const int digital_output [];
+extern const int custom_input [];
 extern const int RESET_TIMEOUT;
 extern const bool WaitTimeOutBeforeReset;
 extern const int RESET_PIN_MODE;
@@ -95,6 +99,16 @@ void set_initial_data(){
     localeepromAddress += sizeof(MyDomoticSetting);
     PrintINFO(".",0,false);
   }
+  for(int i=0; i<count_custom_input; i++){
+    CustomPin data_tmp = {
+            custom_input[i],
+            "","",
+            localeepromAddress,     //_eepromAddress
+          };
+    EEPROM.put(localeepromAddress, data_tmp);
+    localeepromAddress += sizeof(CustomPin);
+    PrintINFO(".",0,false);
+  }
   PrintINFO("DONE!",1,false);
   PrintINFO("",1,false);
 }
@@ -146,12 +160,19 @@ void load_stored_data(){
   DPrintln("*********                         ********");
   DPrintln("******************************************");
   DPrintln("******************************************");
-  MyDomoticSetting data[count_digital_input];
   Serial.print("INFO: Load internal data ");
+  MyDomoticSetting data_tmp;
   for(int i=0; i<count_digital_input; i++){
-    EEPROM.get(eepromAddress, data[i]);
-    mydomotic_obj[i]=MyDomotic(data[i]);
+    EEPROM.get(eepromAddress, data_tmp);
+    mydomotic_obj[i]=MyDomotic(data_tmp);
     eepromAddress += sizeof(MyDomoticSetting);
+    Serial.print(".");
+  }
+  CustomPin data_custom_tmp;
+  for(int i=0; i<count_custom_input; i++){
+    EEPROM.get(eepromAddress, data_custom_tmp);
+    mydomotic_custom_obj[i]=CustomBtn(data_custom_tmp);
+    eepromAddress += sizeof(CustomPin);
     Serial.print(".");
   }
   Serial.println(" done!");

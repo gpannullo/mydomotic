@@ -95,6 +95,7 @@ void MyDomotic::off(void) {
 
 void MyDomotic::setup(void)
 {
+  this->configuration_setup = true;
   // PREVIENE CHE QUANDO UN PIN VIENE CONFIGURATO COME OUTPUT
   // POSSA ESSERE LOW E ACCENDERE IL RELE IN MANIERA NON CONTROLLATA
   int type_object = this->data.type_object;
@@ -352,5 +353,19 @@ void MyDomotic::SetLed(int LED, int level) {
 // METODO PER CAMBIARE DI STATO UN LED
 void MyDomotic::save() {
   EEPROM.put(this->data._eepromAddress, this->data);
-  Serial.println("Save id: " + (String) this->data.id);
+}
+
+void MyDomotic::loadingData(String data){
+  if(ENABLE_CONFIGURE){
+    StaticJsonBuffer<200> jsonBuffer;
+    JsonObject& root = jsonBuffer.parseObject(data);
+    if(root["label"] != "") strncpy(this->data.label, root["label"], sizeof(this->data.label));
+    if(root["led"] != "") this->data.led = atoi(root["led"]);
+    if(root["period"] != "") this->data.period = 1000L * atoi(root["period"]);
+    if(root["led_check"] != "") this->data.led_check = atoi(root["led_check"]);
+    if(root["type_object"] != "") this->data.type_object = atoi(root["type_object"]);
+    if(root["idx"] != "") this->data.idx = atoi(root["idx"]);
+    this->data._period_state = 0;
+    this->save();
+  }
 }

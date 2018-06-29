@@ -3,18 +3,18 @@
 
 #include <Arduino.h>
 
-const String PREFIX_STAT="sta";
-const String PREFIX_CMD="cmd";
-const String PREFIX_SET="set";
+const String PREFIX_STAT  = "sta";
+const String PREFIX_CMD   = "cmd";
+const String PREFIX_SET   = "set";
 
 struct ArduinoSetting {
   int _eepromAddress;
-  char hostname[50];
-  char topic[50];
+  char hostname[10];
+  char topic[10];
   boolean debug;
   boolean domoticz;
-  char domoticz_in[100];
-  char domoticz_out[100];
+  char domoticz_in[10];
+  char domoticz_out[10];
 };
 
 struct MyDomoticSetting {
@@ -22,7 +22,7 @@ struct MyDomoticSetting {
   int   led_check;                  //LED SECONDARIO UTILIZZATO IN CASO DI PERSIANE
   long  period;                    //EVENUALE TIMER
   int   type_object;                //TIPO DI OGGETTO [SWITCH, BLIND, BUTTON*, BLIND2*]
-  char  label[50];                 //STRINGA DI RICONOSCIMENTO
+  char  label[10];                 //STRINGA DI RICONOSCIMENTO
   int   idx;                        //INDICE PER DOMOTICZ
   // PRIVATE VARIABLE
   int   id;                         //INDICE DELL'AZIONE
@@ -32,4 +32,10 @@ struct MyDomoticSetting {
   int   _led_state;                  //STATO DEL LED ATTUALE
 };
 
+struct CustomPin {
+  int   btn;                        //BOTTONE DELL'AZIONE
+  char  mqtt[50];
+  char  topic[50];
+  int   _eepromAddress;
+};
 #endif /* MyDomoticCore_h */
