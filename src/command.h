@@ -68,9 +68,8 @@ void set_initial_data(){
   PrintINFO("",1,false);
   PrintINFO("LOADING Initial DATA Setting... ",0);
   int localeepromAddress=0;
-  //PrintDEBUG("Actual eepromAddress: " + (String) localeepromAddress);
   ArduinoSetting arduino_setting_tmp;
-  ARDUINOHOST.toCharArray(arduino_setting_tmp.hostname, ARDUINOHOST.length()+1);
+  strncpy(arduino_setting_tmp.hostname, ARDUINOHOST.c_str(), sizeof(arduino_setting_tmp.hostname));
   arduino_setting_tmp.debug = DEBUG_SERIAL;
   arduino_setting_tmp.domoticz = true;
   arduino_setting_tmp._eepromAddress=localeepromAddress;
@@ -107,7 +106,7 @@ void set_initial_data(){
           };
     EEPROM.put(localeepromAddress, data_tmp);
     localeepromAddress += sizeof(CustomPin);
-    PrintINFO(".",0,false);
+    PrintINFO("*",0,false);
   }
   PrintINFO("DONE!",1,false);
   PrintINFO("",1,false);
@@ -153,6 +152,15 @@ void load_stored_data(){
   int eepromAddress=0;
   EEPROM.get(eepromAddress, arduino_setting);
   eepromAddress += sizeof(ArduinoSetting);
+  /*
+  Serial.println(arduino_setting.hostname);
+  Serial.println(arduino_setting.debug);
+  Serial.println(arduino_setting.domoticz);
+  Serial.println(arduino_setting._eepromAddress);
+  Serial.println(arduino_setting.topic);
+  Serial.println(arduino_setting.domoticz_in);
+  Serial.println(arduino_setting.domoticz_out);
+  */
   DPrintln("******************************************");
   DPrintln("******************************************");
   DPrintln("*********                         ********");
@@ -161,15 +169,15 @@ void load_stored_data(){
   DPrintln("******************************************");
   DPrintln("******************************************");
   Serial.print("INFO: Load internal data ");
-  MyDomoticSetting data_tmp;
   for(int i=0; i<count_digital_input; i++){
+    MyDomoticSetting data_tmp;
     EEPROM.get(eepromAddress, data_tmp);
     mydomotic_obj[i]=MyDomotic(data_tmp);
     eepromAddress += sizeof(MyDomoticSetting);
     Serial.print(".");
   }
-  CustomPin data_custom_tmp;
   for(int i=0; i<count_custom_input; i++){
+    CustomPin data_custom_tmp;
     EEPROM.get(eepromAddress, data_custom_tmp);
     mydomotic_custom_obj[i]=CustomBtn(data_custom_tmp);
     eepromAddress += sizeof(CustomPin);

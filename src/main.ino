@@ -19,7 +19,6 @@
 
 bool DEBUG_SERIAL                     = true;
 bool ENABLE_CONFIGURE                 = false;
-int eepromAddress                     = 0;
 const int RESET_TIMEOUT               = 10;
 const bool WaitTimeOutBeforeReset     = true;
 const int RESET_PIN_MODE              = 13;

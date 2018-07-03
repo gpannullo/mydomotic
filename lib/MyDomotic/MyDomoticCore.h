@@ -9,12 +9,12 @@ const String PREFIX_SET   = "set";
 
 struct ArduinoSetting {
   int _eepromAddress;
-  char hostname[10];
-  char topic[10];
+  char hostname[20];
+  char topic[20];
   boolean debug;
   boolean domoticz;
-  char domoticz_in[10];
-  char domoticz_out[10];
+  char domoticz_in[20];
+  char domoticz_out[20];
 };
 
 struct MyDomoticSetting {
@@ -22,7 +22,7 @@ struct MyDomoticSetting {
   int   led_check;                  //LED SECONDARIO UTILIZZATO IN CASO DI PERSIANE
   long  period;                    //EVENUALE TIMER
   int   type_object;                //TIPO DI OGGETTO [SWITCH, BLIND, BUTTON*, BLIND2*]
-  char  label[10];                 //STRINGA DI RICONOSCIMENTO
+  char  label[20];                 //STRINGA DI RICONOSCIMENTO
   int   idx;                        //INDICE PER DOMOTICZ
   // PRIVATE VARIABLE
   int   id;                         //INDICE DELL'AZIONE
