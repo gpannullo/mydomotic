@@ -31,6 +31,8 @@ extern bool DEBUG_SERIAL;
 extern bool ENABLE_CONFIGURE;
 extern String ARDUINOHOST;
 extern ArduinoSetting arduino_setting;
+extern int SET_CLOSE;
+extern int SET_OPEN;
 
 const int MYD_TYPE_SWITCH     = 0;
 const int MYD_TYPE_BUTTON     = 1;

@@ -51,3 +51,11 @@ String bool2String(bool c){
     return "OFF";
   }
 }
+
+String level2String(bool c){
+  if(c){
+    return "SET_OPEN = HIGH";
+  }else{
+    return "SET_OPEN = LOW";
+  }
+}

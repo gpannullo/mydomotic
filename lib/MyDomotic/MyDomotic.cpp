@@ -80,10 +80,10 @@ void MyDomotic::lock(void)
   //SETTA IL PIN COME HIGH PER EVITARE PICCHI DURANTE LA FARE DI ASSEGNAZIONE OUTPUT
   delay(10);
   //this->SetLed(this->data.led, this->data.led_check);
-  this->SetLed(this->data.led, HIGH);
+  this->SetLed(this->data.led, SET_CLOSE);
   if (this->data.type_object == MYD_TYPE_BLIND or this->data.type_object == MYD_TYPE_BLIND2) {
     delay(10);
-    this->SetLed(this->data.led_check, HIGH);
+    this->SetLed(this->data.led_check, SET_CLOSE);
   }
   this->status_led = "LOCK";
   if (arduino_setting.debug) Serial.println(this->status_led + " LED: " + this->data.label);
@@ -204,9 +204,9 @@ String MyDomotic::get_status(void){
 void MyDomotic::loop(void)
 {
   //VERIFICA SE IL TIMER HA FINITO
-  if (this->delayled.isExpired() && digitalRead(this->data.led) == LOW && this->data.period > 0) {
+  if (this->delayled.isExpired() && digitalRead(this->data.led) == SET_OPEN && this->data.period > 0) {
     this->status_led = "CLOSE";
-    this->SetLed(this->data.led, HIGH);
+    this->SetLed(this->data.led, SET_CLOSE);
     if (arduino_setting.debug) Serial.println("END TIMER CLOSE LED: " + (String) this->data.led + " " + (String) this->data.label);
   }
   this->check_btn_state();
@@ -247,13 +247,13 @@ String MyDomotic::setObj(void) {
 void MyDomotic::open(void)
 {
   //VERIFICA CHE IL RELE' DI SALITA/DISCESA NON SIA GIA' IN AZIONE
-  if (digitalRead(this->data.led) == HIGH) {
+  if (digitalRead(this->data.led) == SET_CLOSE) {
     if (arduino_setting.debug) Serial.println("3 BLOCCO DI TUTTI I RELE DI: " + (String) this->data.label + " AVVIATO");
     // CHIUDE IL RELE' DI DISCESA/SALITA
     lock();
     if (arduino_setting.debug) Serial.println("4 ATTESA: " + (String) this->data.label);
     //ABILITA IL RELE' DI SALITA/DISCESA
-    this->SetLed(this->data.led, LOW);
+    this->SetLed(this->data.led, SET_OPEN);
     if (this->data.period > 0) {
       if (arduino_setting.debug) Serial.println("5 ACCENSIONE RELE DI: " + (String) this->data.label + " AVVIATO");
       this->delayled.start(this->data.period, AsyncDelay::MILLIS);
@@ -273,12 +273,12 @@ void MyDomotic::on(void) {
 // METODO PER APRIRE/CHIUDERE UNA LUCE ANCHE A TEMPO SE period > 0
 void MyDomotic::change(void)
 {
-  if (digitalRead(this->data.led) == HIGH) {
+  if (digitalRead(this->data.led) == SET_CLOSE) {
     this->status_led = "OPEN";
-    this->SetLed(this->data.led, LOW);
+    this->SetLed(this->data.led, SET_OPEN);
   } else {
     this->status_led = "CLOSE";
-    this->SetLed(this->data.led, HIGH);
+    this->SetLed(this->data.led, SET_CLOSE);
   }
 }
 
@@ -287,7 +287,7 @@ void MyDomotic::action(void)
 {
   if (this->data.type_object == MYD_TYPE_BLIND) {
     //VERIFICA SE IL PIN DEL RELE' CONTRARIO E' ACCESO
-    if (digitalRead(this->data.led_check) == LOW /*&& this->btn_read == LOW*/) {
+    if (digitalRead(this->data.led_check) == SET_OPEN /*&& this->btn_read == LOW*/) {
       // SE GIA' ERA ACCESO, BLOCCA ENTRAMBI
       if (arduino_setting.debug) Serial.println("2.2. BLOCCO: " + (String) this->data.label + " RICHIESTO");
       this->lock();

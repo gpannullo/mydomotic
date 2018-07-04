@@ -25,6 +25,9 @@ const int RESET_PIN_MODE              = 13;
 ArduinoSetting arduino_setting;
 AsyncDelay status_time;
 long status_time_refresh              = (1000L * 60);
+bool WORK_RELAY_LEVEL                 = false;
+int SET_OPEN                          = LOW;
+int SET_CLOSE                         = HIGH;
 
 /****************************************
   Define board pins input/output count
@@ -122,6 +125,9 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
 
     ELClientMqtt client_mqtt(&esp);                   // Initialize the MQTT client
     bool connected;
+    bool sync_ok = false;
+    bool setup_ok = false;
+    bool connect_ok = false;
     ELClientWebServer client_webserver(&esp);         // Initialize the Web-Server client
 
     void wifiCb(void* response) {
@@ -192,14 +198,20 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
     }
 
     void resetCb(void) {
-      bool ok = false;
-      do {
+      sync_ok = esp.Sync();
+      if (!sync_ok){
         PrintINFO("EL-Client (re-)starting!");
-        ok = esp.Sync();
-      } while(!ok);
-      PrintINFO("EL-Client synced!");
-      client_webserver.setup();
-      client_mqtt.setup();
+        sync_ok = esp.Sync();
+        setup_ok=false;
+      }
+      if (sync_ok) {
+        if (!setup_ok){
+          PrintINFO("EL-Client synced!");
+          client_webserver.setup();
+          client_mqtt.setup();
+          setup_ok=true;
+        }
+      }
     }
 
     void mydomoticRefreshCb(char * url) {
@@ -214,10 +226,12 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
       String d1 = bool2String(arduino_setting.domoticz);
       String b = (String) BOARDNAMETYPE;
       String configure_enable = bool2String(ENABLE_CONFIGURE);
+      String work_relay_level = level2String(WORK_RELAY_LEVEL);
       client_webserver.setArgJson(F("arduinohostname"), Str2Json(h).begin());
       client_webserver.setArgJson(F("debug"), Str2Json(d).begin());
       client_webserver.setArgJson(F("domoticz"), Str2Json(d1).begin());
       client_webserver.setArgJson(F("configureenable"), Str2Json(configure_enable).begin());
+      client_webserver.setArgJson(F("workrelaylevel"), Str2Json(work_relay_level).begin());
       client_webserver.setArgJson(F("din"), Str2Json(din).begin());
       client_webserver.setArgJson(F("dout"), Str2Json(dout).begin());
       client_webserver.setArgJson(F("board"), Str2Json(b).begin());
@@ -250,6 +264,16 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
           ENABLE_CONFIGURE = false;
         } else {
           ENABLE_CONFIGURE = true;
+        }
+      } else if( btn == F("workrelaychange") ){
+        if (WORK_RELAY_LEVEL) {
+          WORK_RELAY_LEVEL = false;
+          SET_OPEN = LOW;
+          SET_CLOSE = HIGH;
+        } else {
+          WORK_RELAY_LEVEL = true;
+          SET_OPEN = HIGH;
+          SET_CLOSE = LOW;
         }
       }
     }
@@ -286,6 +310,19 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
       }
     }
 
+    void connect_domotic(void){
+      if (!connect_ok) {
+        for (int i = 0; i < count_digital_input; i++) {
+          //CHIAMATA AL SETUP DEGLI OGGETTI
+          mydomotic_obj[i].mqttset(client_mqtt);
+        }
+        for (int i = 0; i < count_custom_input; i++) {
+          //CHIAMATA AL SETUP DEGLI OGGETTI
+          mydomotic_custom_obj[i].setup();
+        }
+        connect_ok=true;
+      }
+    }
 
 #endif
 
@@ -340,16 +377,11 @@ void setup() {
     resetCb();
   #endif
   #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
-  for (int i = 0; i < count_digital_input; i++) {
-    //CHIAMATA AL SETUP DEGLI OGGETTI
-    mydomotic_obj[i].mqttset(client_mqtt);
-  }
-  for (int i = 0; i < count_custom_input; i++) {
-    //CHIAMATA AL SETUP DEGLI OGGETTI
-    mydomotic_custom_obj[i].setup();
+  if (setup_ok) {
+    connect_domotic();
   }
   #endif
-  //status_time.start(status_time_refresh, AsyncDelay::MILLIS);
+  status_time.start(status_time_refresh, AsyncDelay::MILLIS);
   PrintINFO("HOSTNAME: " + (String) arduino_setting.hostname);
   PrintINFO("SYSTEM STARTED!");
 }
@@ -357,12 +389,14 @@ void setup() {
 
 void loop() {
   #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
-  if (status_time.isExpired()) {
-    client_mqtt.publish(mqtt_topic_status().c_str(),system_status().c_str());
-    for (int i = 0; i < count_digital_input; i++) {
-      client_mqtt.publish(mqtt_topic_status().c_str(),mydomotic_obj[i].to_json().c_str());
+  if(connect_ok){
+    if (status_time.isExpired()) {
+      client_mqtt.publish(mqtt_topic_status().c_str(),system_status().c_str());
+      for (int i = 0; i < count_digital_input; i++) {
+        client_mqtt.publish(mqtt_topic_status().c_str(),mydomotic_obj[i].to_json().c_str());
+      }
+      status_time.repeat();
     }
-    status_time.repeat();
   }
   #endif
   for (int i = 0; i < count_digital_input; i++) {
@@ -387,7 +421,15 @@ void loop() {
       client_mqtt.loop();
     }
   #elif ETHERNETSUPPORT == 2
+  if(sync_ok && setup_ok && connect_ok){
     esp.Process();
+  } else if (!sync_ok) {
+    resetCb();
+  } else if (sync_ok && !setup_ok) {
+    resetCb();
+  } else if(sync_ok && setup_ok && !connect_ok){
+    connect_domotic();
+  }
   #endif
 
   #if ETHERNETSUPPORT == 0

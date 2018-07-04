@@ -106,7 +106,7 @@ void set_initial_data(){
           };
     EEPROM.put(localeepromAddress, data_tmp);
     localeepromAddress += sizeof(CustomPin);
-    PrintINFO("*",0,false);
+    PrintINFO(".",0,false);
   }
   PrintINFO("DONE!",1,false);
   PrintINFO("",1,false);
