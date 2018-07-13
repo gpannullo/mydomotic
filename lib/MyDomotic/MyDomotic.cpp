@@ -83,7 +83,9 @@ void MyDomotic::lock(void)
   this->SetLed(this->data.led, SET_CLOSE);
   if (this->data.type_object == MYD_TYPE_BLIND or this->data.type_object == MYD_TYPE_BLIND2) {
     delay(10);
-    this->SetLed(this->data.led_check, SET_CLOSE);
+    if (this->data.led_check != 0) {
+      this->SetLed(this->data.led_check, SET_CLOSE);
+    }
   }
   this->status_led = "LOCK";
   if (arduino_setting.debug) Serial.println(this->status_led + " LED: " + this->data.label);
@@ -121,7 +123,9 @@ void MyDomotic::setup_switch(void) {
 
 void MyDomotic::setup_blind(void) {
   this->setup_switch();
-  pinMode(this->data.led_check, OUTPUT);
+  if (this->data.led_check != 0){
+      pinMode(this->data.led_check, OUTPUT);
+  }
 }
 
 
@@ -184,9 +188,10 @@ String MyDomotic::to_json(void) {
   return  "{ \"ID\": \"" + (String) this->data.id + "\"" + \
           ", \"IDX\": \"" + (String) this->data.idx + "\"" + \
           ", \"Label\": \"" + (String) this->data.label + "\"" + \
-          ", \"PIN_button\": \"" + (String) this->data.btn + "\"" + \
-          ", \"PIN_action\": \"" + (String) this->data.led + "\"" + \
-          ", \"PIN_action_check\": \"" + (String) this->data.led_check + "\"" + \
+          ", \"BTN\": \"" + (String) this->data.btn + "\"" + \
+          ", \"LED\": \"" + (String) this->data.led + "\"" + \
+          ", \"LEV\": \"" + (String) digitalRead(this->data.led) + "\"" + \
+          ", \"LED2\": \"" + (String) this->data.led_check + "\"" + \
           ", \"TYPE\": \"" + (String) this->type_to_str() + "\"" + \
           ", \"STATUS\": \"" + (String) this->status_led + "\"" + \
           ", \"PERIOD\": \"" + (String) this->data.period + "\"" + \
@@ -210,18 +215,6 @@ void MyDomotic::loop(void)
     if (arduino_setting.debug) Serial.println("END TIMER CLOSE LED: " + (String) this->data.led + " " + (String) this->data.label);
   }
   this->check_btn_state();
-}
-
-String MyDomotic::getTopic(void) {
-  // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
-  // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
-  return PREFIX_CMD + "/" + (String) arduino_setting.topic + "/action/" + (String) this->data.id;
-}
-
-String MyDomotic::setObj(void) {
-  // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
-  // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
-  return PREFIX_SET + "/" + (String) arduino_setting.topic + "/" + (String) this->data.id;
 }
 
 /*
@@ -305,6 +298,12 @@ void MyDomotic::action(void)
     if (this->data.period > 0) {
       this->delayled.start(this->data.period, AsyncDelay::MILLIS);
     }
+  } else if (this->data.type_object == MYD_TYPE_BUTTON) {
+      if(digitalRead(this->data.btn) == LOW){
+        this->on();
+      } else {
+        this->off();
+      }
   }
 }
 
@@ -327,13 +326,18 @@ void MyDomotic::SetLed(int LED, int level) {
                 "\"btn\":\"" + (String) this->data.btn + "\", " +
                 "\"period\":\"" + (String) this->data.period + "\", " +
                 "\"status\":\"" + (String) digitalRead(LED) + "\"}";
+  //if (arduino_setting.debug) Serial.println(json);
   if (this->client_mqtt_enable && this->data.led == LED) {
     #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
+    //if (arduino_setting.debug) Serial.println("Start domoticz");
     if (arduino_setting.domoticz) this->client->publish(arduino_setting.domoticz_out, json.c_str());
+    //if (arduino_setting.debug) Serial.println("Published domoticz");
     String topic1 = PREFIX_STAT + "/" + (String) arduino_setting.topic + "/STATUS";
     this->client->publish(topic1.c_str(), this->to_json().c_str());
+    //if (arduino_setting.debug) Serial.println("Published topic1");
     String topic2 = PREFIX_STAT + "/" + (String) arduino_setting.topic + "/LED";
     this->client->publish(topic2.c_str(), this->to_json().c_str());
+    //if (arduino_setting.debug) Serial.println("Published topic2");
     #endif
   }
 }
@@ -355,17 +359,31 @@ void MyDomotic::save() {
   EEPROM.put(this->data._eepromAddress, this->data);
 }
 
+
+String MyDomotic::getTopic(void) {
+  // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
+  // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
+  return PREFIX_CMD + "/" + (String) arduino_setting.topic + "/action/" + (String) this->data.id;
+}
+
+
+String MyDomotic::setObj(void) {
+  // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
+  // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
+  return PREFIX_SET + "/" + (String) arduino_setting.topic + "/" + (String) this->data.id;
+}
+
+
 void MyDomotic::loadingData(String data){
-  if(ENABLE_CONFIGURE){
-    StaticJsonBuffer<200> jsonBuffer;
-    JsonObject& root = jsonBuffer.parseObject(data);
-    if(root["label"] != "") strncpy(this->data.label, root["label"], sizeof(this->data.label));
-    if(root["led"] != "") this->data.led = atoi(root["led"]);
-    if(root["period"] != "") this->data.period = 1000L * atoi(root["period"]);
-    if(root["led_check"] != "") this->data.led_check = atoi(root["led_check"]);
-    if(root["type_object"] != "") this->data.type_object = atoi(root["type_object"]);
-    if(root["idx"] != "") this->data.idx = atoi(root["idx"]);
-    this->data._period_state = 0;
-    this->save();
-  }
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject& root = jsonBuffer.parseObject(data);
+  if(root["label"] != "") strncpy(this->data.label, root["label"], sizeof(this->data.label));
+  if(root["led"] != "") this->data.led = atoi(root["led"]);
+  if(root["period"] != "") this->data.period = 1000L * atoi(root["period"]);
+  if(root["led_check"] != "") this->data.led_check = atoi(root["led_check"]);
+  if(root["type_object"] != "") this->data.type_object = atoi(root["type_object"]);
+  if(root["idx"] != "") this->data.idx = atoi(root["idx"]);
+  this->data._period_state = 0;
+
+  this->save();
 }

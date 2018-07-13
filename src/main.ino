@@ -25,7 +25,6 @@ const int RESET_PIN_MODE              = 13;
 ArduinoSetting arduino_setting;
 AsyncDelay status_time;
 long status_time_refresh              = (1000L * 60);
-bool WORK_RELAY_LEVEL                 = false;
 int SET_OPEN                          = LOW;
 int SET_CLOSE                         = HIGH;
 
@@ -168,11 +167,16 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
       PrintDEBUG("MQTT Message arrived [" + topic + "]: DATA [" + data + "] ");
       // CERCA L'OGGETTO MYDOMOTIC CON IL TOPIC RICEVUTO
       if(topic.substring(0,3) == PREFIX_SET.substring(0,3)){
-        for (int i = 0; i < count_digital_input; i++) {
-          if (mydomotic_obj[i].setObj() == topic) {
-            mydomotic_obj[i].loadingData(data);
-            i = count_digital_input;
-            break;
+        if (digitalRead(RESET_PIN_MODE) == LOW) {
+          PrintINFO("Programmazione ARDUINO MyDomotic");
+          for (int i = 0; i < count_digital_input; i++) {
+            if (mydomotic_obj[i].setObj() == topic) {
+              PrintINFO("Programmazione ARDUINO MyDomotic id: " + (String) i);
+              mydomotic_obj[i].loadingData(data);
+              client_mqtt.publish(mqtt_topic_status().c_str(),mydomotic_obj[i].to_json().c_str());
+              i = count_digital_input;
+              break;
+            }
           }
         }
       } else if (topic.substring(0,3) == PREFIX_CMD.substring(0,3)){
@@ -225,8 +229,8 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
       String d = bool2String(arduino_setting.debug);
       String d1 = bool2String(arduino_setting.domoticz);
       String b = (String) BOARDNAMETYPE;
-      String configure_enable = bool2String(ENABLE_CONFIGURE);
-      String work_relay_level = level2String(WORK_RELAY_LEVEL);
+      String configure_enable = int2String(digitalRead(RESET_PIN_MODE));
+      String work_relay_level = level2String(arduino_setting.logical_work_level);
       client_webserver.setArgJson(F("arduinohostname"), Str2Json(h).begin());
       client_webserver.setArgJson(F("debug"), Str2Json(d).begin());
       client_webserver.setArgJson(F("domoticz"), Str2Json(d1).begin());
@@ -243,37 +247,31 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
 
     void mydomoticDebugButtonPressCb(char * button){
       String btn = button;
-      if( btn == F("debugchange") ) {
-        if(arduino_setting.debug){
-          arduino_setting.debug = false;
+      if (digitalRead(RESET_PIN_MODE) == LOW){
+        if( btn == F("debugchange") ) {
+          if(arduino_setting.debug){
+            arduino_setting.debug = false;
+            SaveData(arduino_setting);
+          } else {
+            arduino_setting.debug = true;
+            SaveData(arduino_setting);
+          }
+        } else if( btn == F("domoticzchange") ) {
+          if (arduino_setting.domoticz) {
+            arduino_setting.domoticz = false;
+            SaveData(arduino_setting);
+          } else {
+            arduino_setting.domoticz = true;
+            SaveData(arduino_setting);
+          }
+        }  else if( btn == F("workrelaychange") ) {
+          if (arduino_setting.logical_work_level) {
+            arduino_setting.logical_work_level = false;
+          } else {
+            arduino_setting.logical_work_level = true;
+          }
           SaveData(arduino_setting);
-        } else {
-          arduino_setting.debug = true;
-          SaveData(arduino_setting);
-        }
-      } else if( btn == F("domoticzchange") ){
-        if (arduino_setting.domoticz) {
-          arduino_setting.domoticz = false;
-          SaveData(arduino_setting);
-        } else {
-          arduino_setting.domoticz = true;
-          SaveData(arduino_setting);
-        }
-      } else if( btn == F("configchange") ){
-        if (ENABLE_CONFIGURE) {
-          ENABLE_CONFIGURE = false;
-        } else {
-          ENABLE_CONFIGURE = true;
-        }
-      } else if( btn == F("workrelaychange") ){
-        if (WORK_RELAY_LEVEL) {
-          WORK_RELAY_LEVEL = false;
-          SET_OPEN = LOW;
-          SET_CLOSE = HIGH;
-        } else {
-          WORK_RELAY_LEVEL = true;
-          SET_OPEN = HIGH;
-          SET_CLOSE = LOW;
+          set_logical_work_level();
         }
       }
     }
@@ -286,27 +284,29 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
 
     void mydomoticSetFieldCb(char * field)
     {
-      String fld = field;
-      if( fld == F("topic")){
-        String topic;
-        topic = client_webserver.getArgString();
-        topic.toCharArray(arduino_setting.topic, topic.length()+1);
-        SaveData(arduino_setting);
-      } else if( fld == F("arduinohostname")){
-        String arduinohostname;
-        arduinohostname = client_webserver.getArgString();
-        arduinohostname.toCharArray(arduino_setting.hostname, arduinohostname.length()+1);
-        SaveData(arduino_setting);
-      } else if( fld == F("din")){
-        String stringa;
-        stringa = client_webserver.getArgString();
-        stringa.toCharArray(arduino_setting.domoticz_in, stringa.length()+1);
-        SaveData(arduino_setting);
-      } else if( fld == F("dout")){
-        String stringa;
-        stringa = client_webserver.getArgString();
-        stringa.toCharArray(arduino_setting.domoticz_out, stringa.length()+1);
-        SaveData(arduino_setting);
+      if (digitalRead(RESET_PIN_MODE) == LOW){
+        String fld = field;
+        if( fld == F("topic")){
+          String topic;
+          topic = client_webserver.getArgString();
+          topic.toCharArray(arduino_setting.topic, topic.length()+1);
+          SaveData(arduino_setting);
+        } else if( fld == F("arduinohostname")){
+          String arduinohostname;
+          arduinohostname = client_webserver.getArgString();
+          arduinohostname.toCharArray(arduino_setting.hostname, arduinohostname.length()+1);
+          SaveData(arduino_setting);
+        } else if( fld == F("din")){
+          String stringa;
+          stringa = client_webserver.getArgString();
+          stringa.toCharArray(arduino_setting.domoticz_in, stringa.length()+1);
+          SaveData(arduino_setting);
+        } else if( fld == F("dout")){
+          String stringa;
+          stringa = client_webserver.getArgString();
+          stringa.toCharArray(arduino_setting.domoticz_out, stringa.length()+1);
+          SaveData(arduino_setting);
+        }
       }
     }
 
@@ -314,13 +314,16 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
       if (!connect_ok) {
         for (int i = 0; i < count_digital_input; i++) {
           //CHIAMATA AL SETUP DEGLI OGGETTI
+          PrintINFO("MyDomotic Setup MQTT ID: " + (String) i);
           mydomotic_obj[i].mqttset(client_mqtt);
         }
+        /*
         for (int i = 0; i < count_custom_input; i++) {
           //CHIAMATA AL SETUP DEGLI OGGETTI
           mydomotic_custom_obj[i].setup();
-        }
+        }*/
         connect_ok=true;
+        PrintINFO("MyDomotic Setup MQTT Ready!!!");
       }
     }
 
@@ -328,9 +331,9 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
 
 void setup() {
   Serial.begin(115200);
-
+  pinMode(RESET_PIN_MODE, INPUT_PULLUP);
   verifica_reset_data();
-  //set_initial_data();
+
   load_stored_data();
 
   PrintINFO("",1,false);
@@ -360,7 +363,7 @@ void setup() {
     client_mqtt.setCallback(callback);
     reconnect();
   #elif ETHERNETSUPPORT  == 2
-    PrintINFO("EL-Client starting!");
+    PrintINFO("EL-Client starting...");
     esp.resetCb = resetCb;
 
     URLHandler *mydomotic_status = client_webserver.createURLHandler(F("/MyDStatus.html.json"));
@@ -374,16 +377,28 @@ void setup() {
     client_mqtt.publishedCb.attach(mqttPublished);
     client_mqtt.dataCb.attach(callback);
 
-    resetCb();
+    //resetCb();
+    bool ok;
+    do {
+      ok = esp.Sync();      // sync up with esp-link, blocks for up to 2 seconds
+      if (!ok) Serial.println("EL-Client sync failed!");
+    } while(!ok);
+    client_mqtt.setup();
+    client_webserver.setup();
+    for (int i = 0; i < count_digital_input; i++) {
+      //CHIAMATA AL SETUP DEGLI OGGETTI
+      mydomotic_obj[i].mqttset(client_mqtt);
+    }
+
   #endif
-  #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
+  /*#if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
   if (setup_ok) {
     connect_domotic();
   }
-  #endif
+  #endif*/
   status_time.start(status_time_refresh, AsyncDelay::MILLIS);
-  PrintINFO("HOSTNAME: " + (String) arduino_setting.hostname);
-  PrintINFO("SYSTEM STARTED!");
+  PrintINFO("SETUP HOSTNAME: " + (String) arduino_setting.hostname);
+  PrintINFO("SETUP SYSTEM STARTED!");
 }
 
 
@@ -402,9 +417,10 @@ void loop() {
   for (int i = 0; i < count_digital_input; i++) {
     mydomotic_obj[i].loop();
   }
+  /*
   for (int i = 0; i < count_custom_input; i++) {
     mydomotic_custom_obj[i].loop();
-  }
+  }*/
   #if ETHERNETSUPPORT == 1
     if (!client_mqtt.connected()) {
       long now = millis();
@@ -421,6 +437,8 @@ void loop() {
       client_mqtt.loop();
     }
   #elif ETHERNETSUPPORT == 2
+    esp.Process();
+  /*
   if(sync_ok && setup_ok && connect_ok){
     esp.Process();
   } else if (!sync_ok) {
@@ -430,6 +448,7 @@ void loop() {
   } else if(sync_ok && setup_ok && !connect_ok){
     connect_domotic();
   }
+  */
   #endif
 
   #if ETHERNETSUPPORT == 0

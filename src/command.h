@@ -15,6 +15,8 @@ extern const int RESET_TIMEOUT;
 extern const bool WaitTimeOutBeforeReset;
 extern const int RESET_PIN_MODE;
 extern const String BOARDNAMETYPE;
+extern int SET_OPEN;
+extern int SET_CLOSE;
 
 //COMANDI
 String CMD_HELP           = "?";
@@ -22,8 +24,12 @@ String CMD_DEBUG          = "DEBUG";
 String CMD_SETTINGS       = "SETTINGS";
 
 void SaveData(ArduinoSetting settings){
-  EEPROM.put(settings._eepromAddress, settings);
-  PrintINFO(" ... SAVED!",1,false);
+  if (digitalRead(RESET_PIN_MODE) == LOW){
+    EEPROM.put(settings._eepromAddress, settings);
+    PrintINFO(" ... SAVED!",1,false);
+  } else {
+    PrintINFO(" ... SAVED BLOCKED!",1,false);
+  }
 }
 
 #if ETHERNETSUPPORT == 0
@@ -72,6 +78,7 @@ void set_initial_data(){
   strncpy(arduino_setting_tmp.hostname, ARDUINOHOST.c_str(), sizeof(arduino_setting_tmp.hostname));
   arduino_setting_tmp.debug = DEBUG_SERIAL;
   arduino_setting_tmp.domoticz = true;
+  arduino_setting_tmp.logical_work_level = false;
   arduino_setting_tmp._eepromAddress=localeepromAddress;
   strncpy(arduino_setting_tmp.topic, "arduino_t", sizeof(arduino_setting_tmp.topic));
   strncpy(arduino_setting_tmp.domoticz_in, "domoticz/in", sizeof(arduino_setting_tmp.domoticz_in));
@@ -148,9 +155,21 @@ void verifica_reset_data(){
   }
 }
 
+void set_logical_work_level(){
+  if(arduino_setting.logical_work_level){
+    SET_CLOSE = LOW;
+    SET_OPEN = HIGH;
+  } else {
+    SET_CLOSE = HIGH;
+    SET_OPEN = LOW;
+  }
+}
+
+
 void load_stored_data(){
   int eepromAddress=0;
   EEPROM.get(eepromAddress, arduino_setting);
+  set_logical_work_level();
   eepromAddress += sizeof(ArduinoSetting);
   /*
   Serial.println(arduino_setting.hostname);
@@ -207,7 +226,9 @@ String system_status(){
     return  "{\"hostname\":\"" + (String) arduino_setting.hostname + "\"" +
             ",\"board\":\"" + (String) BOARDNAMETYPE + "\"" +
             ",\"topic\":\"" + (String) arduino_setting.topic + "\"" +
-            ",\"domoticz\":\"" + bool2String(arduino_setting.domoticz) + "\""+
-            ",\"debug\":\"" + bool2String(arduino_setting.debug) + "\""+
+            ",\"domoticz\":\"" + bool2String(arduino_setting.domoticz) + "\"" +
+            ",\"debug\":\"" + bool2String(arduino_setting.debug) + "\"" +
+            ",\"SET_OPEN\":\"" + (String) SET_OPEN + "\"" +
+            ",\"SET_CLOSE\":\"" + (String) SET_CLOSE + "\"" +
             "}";
 }

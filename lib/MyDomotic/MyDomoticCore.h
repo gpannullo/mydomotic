@@ -13,6 +13,7 @@ struct ArduinoSetting {
   char topic[20];
   boolean debug;
   boolean domoticz;
+  boolean logical_work_level;
   char domoticz_in[20];
   char domoticz_out[20];
 };
