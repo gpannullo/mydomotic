@@ -62,8 +62,8 @@ String int2String(int c){
 
 String level2String(bool c){
   if(c){
-    return "SET_OPEN = HIGH";
+    return "SET_OPEN on level HIGH";
   }else{
-    return "SET_OPEN = LOW";
+    return "SET_OPEN on level LOW";
   }
 }

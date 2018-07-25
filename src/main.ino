@@ -168,10 +168,8 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
       // CERCA L'OGGETTO MYDOMOTIC CON IL TOPIC RICEVUTO
       if(topic.substring(0,3) == PREFIX_SET.substring(0,3)){
         if (digitalRead(RESET_PIN_MODE) == LOW) {
-          PrintINFO("Programmazione ARDUINO MyDomotic");
           for (int i = 0; i < count_digital_input; i++) {
             if (mydomotic_obj[i].setObj() == topic) {
-              PrintINFO("Programmazione ARDUINO MyDomotic id: " + (String) i);
               mydomotic_obj[i].loadingData(data);
               client_mqtt.publish(mqtt_topic_status().c_str(),mydomotic_obj[i].to_json().c_str());
               i = count_digital_input;
@@ -314,7 +312,6 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
       if (!connect_ok) {
         for (int i = 0; i < count_digital_input; i++) {
           //CHIAMATA AL SETUP DEGLI OGGETTI
-          PrintINFO("MyDomotic Setup MQTT ID: " + (String) i);
           mydomotic_obj[i].mqttset(client_mqtt);
         }
         /*

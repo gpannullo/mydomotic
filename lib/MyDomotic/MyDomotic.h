@@ -26,18 +26,15 @@
   #include <ELClientWebServer.h>
 #endif
 
-extern bool DEBUG_SERIAL_MYD;
-extern bool DEBUG_SERIAL;
-extern bool ENABLE_CONFIGURE;
-extern String ARDUINOHOST;
 extern ArduinoSetting arduino_setting;
 extern int SET_CLOSE;
 extern int SET_OPEN;
 
 const int MYD_TYPE_SWITCH     = 0;
-const int MYD_TYPE_BUTTON     = 1;
-const int MYD_TYPE_BLIND      = 2;
-const int MYD_TYPE_BLIND2     = 3;
+const int MYD_TYPE_SWITCH2    = 1;
+const int MYD_TYPE_BUTTON     = 20;
+const int MYD_TYPE_BLIND      = 40;
+const int MYD_TYPE_BLIND2     = 41;
 const int MYD_TYPE_COMPLEX    = 99;
 
 class MyDomotic
@@ -65,6 +62,7 @@ private:
     void setup_blind(void);
     //void setup_complex(void); //RDAM
     void change (void);
+    void switch2 (void);
     void check_btn_state(void);
     void SetLed(int led, int level);
 

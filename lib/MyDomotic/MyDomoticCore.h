@@ -19,8 +19,8 @@ struct ArduinoSetting {
 };
 
 struct MyDomoticSetting {
-  int   led;                        //LED PRIMARIO DI RIFERIMENTO PER ATTIVAZIONE RELE'
-  int   led_check;                  //LED SECONDARIO UTILIZZATO IN CASO DI PERSIANE
+  int   led[3];                       //LED PRIMARIO DI RIFERIMENTO PER ATTIVAZIONE RELE'
+  //int   led_check;                  //LED SECONDARIO UTILIZZATO IN CASO DI PERSIANE
   long  period;                    //EVENUALE TIMER
   int   type_object;                //TIPO DI OGGETTO [SWITCH, BLIND, BUTTON*, BLIND2*]
   char  label[20];                 //STRINGA DI RICONOSCIMENTO

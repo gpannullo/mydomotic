@@ -15,6 +15,8 @@ extern const int RESET_TIMEOUT;
 extern const bool WaitTimeOutBeforeReset;
 extern const int RESET_PIN_MODE;
 extern const String BOARDNAMETYPE;
+extern String ARDUINOHOST;
+extern bool DEBUG_SERIAL;
 extern int SET_OPEN;
 extern int SET_CLOSE;
 
@@ -90,7 +92,7 @@ void set_initial_data(){
   PrintINFO("LOADING Initial MyDomotic data objects ", 0);
   for(int i=0; i<count_digital_input; i++){
     MyDomoticSetting data_tmp = {
-            digital_output[i],0,    //led e led_check
+            {digital_output[i],0},    //led e led_check
             0,                      //period timer
             MYD_TYPE_SWITCH,        //type_object
             "BTN LABEL",            //LABEL
