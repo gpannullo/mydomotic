@@ -307,23 +307,6 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
         }
       }
     }
-
-    void connect_domotic(void){
-      if (!connect_ok) {
-        for (int i = 0; i < count_digital_input; i++) {
-          //CHIAMATA AL SETUP DEGLI OGGETTI
-          mydomotic_obj[i].mqttset(client_mqtt);
-        }
-        /*
-        for (int i = 0; i < count_custom_input; i++) {
-          //CHIAMATA AL SETUP DEGLI OGGETTI
-          mydomotic_custom_obj[i].setup();
-        }*/
-        connect_ok=true;
-        PrintINFO("MyDomotic Setup MQTT Ready!!!");
-      }
-    }
-
 #endif
 
 void setup() {
@@ -388,11 +371,6 @@ void setup() {
     }
 
   #endif
-  /*#if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
-  if (setup_ok) {
-    connect_domotic();
-  }
-  #endif*/
   status_time.start(status_time_refresh, AsyncDelay::MILLIS);
   PrintINFO("SETUP HOSTNAME: " + (String) arduino_setting.hostname);
   PrintINFO("SETUP SYSTEM STARTED!");
@@ -401,14 +379,12 @@ void setup() {
 
 void loop() {
   #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
-  if(connect_ok){
-    if (status_time.isExpired()) {
-      client_mqtt.publish(mqtt_topic_status().c_str(),system_status().c_str());
-      for (int i = 0; i < count_digital_input; i++) {
-        client_mqtt.publish(mqtt_topic_status().c_str(),mydomotic_obj[i].to_json().c_str());
-      }
-      status_time.repeat();
+  if (status_time.isExpired()) {
+    client_mqtt.publish(mqtt_topic_status().c_str(),system_status().c_str());
+    for (int i = 0; i < count_digital_input; i++) {
+      client_mqtt.publish(mqtt_topic_status().c_str(),mydomotic_obj[i].to_json().c_str());
     }
+    status_time.repeat();
   }
   #endif
   for (int i = 0; i < count_digital_input; i++) {
@@ -435,17 +411,6 @@ void loop() {
     }
   #elif ETHERNETSUPPORT == 2
     esp.Process();
-  /*
-  if(sync_ok && setup_ok && connect_ok){
-    esp.Process();
-  } else if (!sync_ok) {
-    resetCb();
-  } else if (sync_ok && !setup_ok) {
-    resetCb();
-  } else if(sync_ok && setup_ok && !connect_ok){
-    connect_domotic();
-  }
-  */
   #endif
 
   #if ETHERNETSUPPORT == 0

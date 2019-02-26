@@ -167,7 +167,6 @@ void set_logical_work_level(){
   }
 }
 
-
 void load_stored_data(){
   int eepromAddress=0;
   EEPROM.get(eepromAddress, arduino_setting);
