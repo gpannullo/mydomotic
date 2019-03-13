@@ -131,7 +131,9 @@ void MyDomotic::setup(void)
 void MyDomotic::setup_switch(void) {
   pinMode(this->data.led[0], OUTPUT);
   Serial.println("Setup led:" + String(this->data.led[0]));
-  this->SetLed(this->data.led[0],this->data._led_state);
+  if(this->data.type_object == MYD_TYPE_SWITCH){
+      this->SetLed(this->data.led[0],this->data._led_state);
+  }
   pinMode(this->data.btn, INPUT_PULLUP);
   this->btn_state = digitalRead(this->data.btn);
   this->btn_read = this->btn_state;
@@ -416,14 +418,17 @@ void MyDomotic::SetLed(int LED, int level)
 {
   delay(10);
   digitalWrite(LED, level);
-  this->data._led_state = level;
-  if(this->configuration_setup) this->save();
-  String json = "{\"host\":\"" + (String) arduino_setting.hostname + "\", " +
-                "\"state\":\"ready\", " +
-                "\"led\":\"" + (String) LED + "\", " +
-                "\"btn\":\"" + (String) this->data.btn + "\", " +
-                "\"period\":\"" + (String) this->data.period + "\", " +
-                "\"status\":\"" + (String) digitalRead(LED) + "\"}";
+  if(this->configuration_setup) {
+    if(this->data.type_object == MYD_TYPE_SWITCH){
+        this->data._led_state = level;
+    }
+    this->save();
+    String json = "{\"host\":\"" + (String) arduino_setting.hostname + "\", " +
+                  "\"state\":\"ready\", " +
+                  "\"led\":\"" + (String) LED + "\", " +
+                  "\"btn\":\"" + (String) this->data.btn + "\", " +
+                  "\"period\":\"" + (String) this->data.period + "\", " +
+                  "\"status\":\"" + (String) digitalRead(LED) + "\"}";
 
     #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
     if (this->client_mqtt_enable && this->data.led[0] == LED) {
@@ -434,6 +439,7 @@ void MyDomotic::SetLed(int LED, int level)
       this->client->publish(topic2.c_str(), this->to_json().c_str());
     }
     #endif
+  }
 }
 
 #if ETHERNETSUPPORT == 1
