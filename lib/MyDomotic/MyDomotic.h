@@ -34,7 +34,8 @@ const int MYD_TYPE_SWITCH     = 0;
 const int MYD_TYPE_SWITCH2    = 1;
 const int MYD_TYPE_BUTTON     = 20;
 const int MYD_TYPE_BLIND      = 40;
-const int MYD_TYPE_BLIND2     = 41;
+const int MYD_TYPE_BLIND2_UP  = 41;
+const int MYD_TYPE_BLIND2_DW  = 42;
 const int MYD_TYPE_COMPLEX    = 99;
 
 class MyDomotic

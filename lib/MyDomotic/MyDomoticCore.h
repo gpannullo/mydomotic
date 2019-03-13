@@ -20,21 +20,20 @@ struct ArduinoSetting {
 
 struct MyDomoticSetting {
   int   led[3];                       //LED PRIMARIO DI RIFERIMENTO PER ATTIVAZIONE RELE'
-  //int   led_check;                  //LED SECONDARIO UTILIZZATO IN CASO DI PERSIANE
-  long  period;                    //EVENUALE TIMER
-  int   type_object;                //TIPO DI OGGETTO [SWITCH, BLIND, BUTTON*, BLIND2*]
-  char  label[20];                 //STRINGA DI RICONOSCIMENTO
-  int   idx;                        //INDICE PER DOMOTICZ
+  long  period;                       //EVENUALE TIMER
+  int   type_object;                  //TIPO DI OGGETTO [SWITCH, BLIND, BUTTON*, BLIND2*]
+  char  label[20];                    //STRINGA DI RICONOSCIMENTO
+  int   idx;                          //INDICE PER DOMOTICZ
   // PRIVATE VARIABLE
-  int   id;                         //INDICE DELL'AZIONE
-  int   btn;                        //BOTTONE DELL'AZIONE
+  int   id;                           //INDICE DELL'AZIONE
+  int   btn;                          //BOTTONE DELL'AZIONE
   int   _eepromAddress;
-  long  _period_state;              //EVENUALE TIMER
-  int   _led_state;                  //STATO DEL LED ATTUALE
+  long  _period_state;                //EVENUALE TIMER
+  int   _led_state;                   //STATO DEL LED ATTUALE
 };
 
 struct CustomPin {
-  int   btn;                        //BOTTONE DELL'AZIONE
+  int   btn;                          //BOTTONE DELL'AZIONE
   char  mqtt[50];
   char  topic[50];
   int   _eepromAddress;

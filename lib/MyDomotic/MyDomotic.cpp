@@ -5,11 +5,12 @@
 #include "MyDomotic.h"  // dichiarazione della classe
 
 /* funzione di inizializzazione */
-MyDomotic::MyDomotic() {
-
+MyDomotic::MyDomotic()
+{
 }
 
-MyDomotic::MyDomotic(MyDomoticSetting data) {
+MyDomotic::MyDomotic(MyDomoticSetting data)
+{
   this->data = data;
   this->status_led = "";
 }
@@ -34,7 +35,8 @@ MyDomotic::MyDomotic(String label, int btn, int led, long period)
   label.toCharArray(this->data.label, label.length()+1);
 }
 
-MyDomotic::MyDomotic(String label, int btn, int led, long period, int led_check) {
+MyDomotic::MyDomotic(String label, int btn, int led, long period, int led_check)
+{
   this->data.btn = btn;
   this->data.led[0] = led;
   this->data.led[1] = led_check;
@@ -44,11 +46,13 @@ MyDomotic::MyDomotic(String label, int btn, int led, long period, int led_check)
   label.toCharArray(this->data.label, label.length()+1);
 }
 
-MyDomoticSetting MyDomotic::get_setting(void) {
+MyDomoticSetting MyDomotic::get_setting(void)
+{
   return this->data;
 }
 
-void MyDomotic::set_setting(MyDomoticSetting data) {
+void MyDomotic::set_setting(MyDomoticSetting data)
+{
   this->data = data;
   this->save();
 }
@@ -81,7 +85,11 @@ void MyDomotic::lock(void)
   delay(10);
   //this->SetLed(this->data.led, this->data.led_check);
   this->SetLed(this->data.led[0], SET_CLOSE);
-  if (this->data.type_object == MYD_TYPE_BLIND or this->data.type_object == MYD_TYPE_BLIND2) {
+  if (this->data.type_object == MYD_TYPE_BLIND or  \
+    this->data.type_object == MYD_TYPE_BLIND2_UP or \
+    this->data.type_object == MYD_TYPE_BLIND2_DW or \
+    this->data.type_object == MYD_TYPE_SWITCH2 \
+  ) {
     delay(10);
     if (this->data.led[1] != 0) {
       this->SetLed(this->data.led[1], SET_CLOSE);
@@ -91,13 +99,15 @@ void MyDomotic::lock(void)
   if (arduino_setting.debug) Serial.println(this->status_led + " LED: " + this->data.label);
 }
 
-void MyDomotic::off(void) {
+void MyDomotic::off(void)
+{
   this->lock();
 }
 
 void MyDomotic::setup(void)
 {
-  this->configuration_setup = true;
+  // EVITA SALVATAGGI INUTILI IN FASE DI SETUP
+  this->configuration_setup = false;
   // PREVIENE CHE QUANDO UN PIN VIENE CONFIGURATO COME OUTPUT
   // POSSA ESSERE LOW E ACCENDERE IL RELE IN MANIERA NON CONTROLLATA
   int type_object = this->data.type_object;
@@ -105,7 +115,11 @@ void MyDomotic::setup(void)
   if (type_object == MYD_TYPE_SWITCH) {
     this->setup_switch();
   }
-  else if (type_object == MYD_TYPE_BLIND or type_object == MYD_TYPE_BLIND2) {
+  else if (type_object == MYD_TYPE_BLIND or \
+    type_object == MYD_TYPE_BLIND2_UP or \
+    type_object == MYD_TYPE_BLIND2_DW or \
+    type_object == MYD_TYPE_SWITCH2
+  ) {
     this->setup_blind();
   }
   else if (type_object == MYD_TYPE_COMPLEX) { //RDAM
@@ -116,6 +130,8 @@ void MyDomotic::setup(void)
 
 void MyDomotic::setup_switch(void) {
   pinMode(this->data.led[0], OUTPUT);
+  Serial.println("Setup led:" + String(this->data.led[0]));
+  this->SetLed(this->data.led[0],this->data._led_state);
   pinMode(this->data.btn, INPUT_PULLUP);
   this->btn_state = digitalRead(this->data.btn);
   this->btn_read = this->btn_state;
@@ -163,8 +179,10 @@ String MyDomotic::type_to_str(void){
       return "SWITCH"; break;
     case MYD_TYPE_BLIND:
       return "BLIND"; break;
-    case MYD_TYPE_BLIND2:
-      return "BLIND2"; break;
+    case MYD_TYPE_BLIND2_UP:
+      return "BLIND2UP"; break;
+    case MYD_TYPE_BLIND2_DW:
+      return "BLIND2DW"; break;
     case MYD_TYPE_BUTTON:
       return "BUTTON"; break;
   }
@@ -172,7 +190,8 @@ String MyDomotic::type_to_str(void){
 }
 
 
-String MyDomotic::to_str(void) {
+String MyDomotic::to_str(void)
+{
   // CONVERSIONE DETTAGLI SETTINGS OGGETTO
   return  "  ID: " + (String) this->data.id + \
           ", IDX: " + (String) this->data.idx + \
@@ -190,7 +209,8 @@ String MyDomotic::to_str(void) {
           "";
 }
 
-String MyDomotic::to_json(void) {
+String MyDomotic::to_json(void)
+{
   // CONVERSIONE DETTAGLI SETTINGS OGGETTO IN JSON
   return  "{ \"ID\": \"" + (String) this->data.id + "\"" + \
           ", \"IDX\": \"" + (String) this->data.idx + "\"" + \
@@ -208,7 +228,8 @@ String MyDomotic::to_json(void) {
           "}";
 }
 
-String MyDomotic::get_status(void){
+String MyDomotic::get_status(void)
+{
   return this->status_led;
 }
 
@@ -218,6 +239,9 @@ void MyDomotic::loop(void)
   //VERIFICA SE IL TIMER HA FINITO
   if (this->delayled.isExpired() && digitalRead(this->data.led[0]) == SET_OPEN && this->data.period > 0) {
     this->status_led = "CLOSE";
+    if (this->data.type_object == MYD_TYPE_BLIND2_DW) {
+      this->SetLed(this->data.led[1], SET_CLOSE);
+    }
     this->SetLed(this->data.led[0], SET_CLOSE);
     if (arduino_setting.debug) Serial.println("END TIMER CLOSE LED: " + (String) this->data.led[0] + " " + (String) this->data.label);
   }
@@ -266,7 +290,8 @@ void MyDomotic::open(void)
   } // SE GIA' ATTIVO NON FARE NULLA
 }
 
-void MyDomotic::on(void) {
+void MyDomotic::on(void)
+{
   this->open();
 }
 
@@ -295,6 +320,44 @@ void MyDomotic::action(void)
       // AZIONA APERTURA RELE'
       if (arduino_setting.debug) Serial.println("2.1 APERTURA RELE DI: " + (String) this->data.label + " RICHIESTO");
       this->open();
+    }
+  } else if (this->data.type_object == MYD_TYPE_BLIND2_UP) {
+    //RELE A e B (A acceso fase B spento ritorno)
+    if (digitalRead(this->data.led[0]) == SET_OPEN and digitalRead(this->data.led[1]) == SET_OPEN)
+    {
+      // CONDIZIONE DI MYD_TYPE_BLIND2_UP ATTIVO QUINDI BLOCCA
+      if (arduino_setting.debug) Serial.println("2.2. BLOCCO: " + (String) this->data.label + " RICHIESTO");
+      this->lock();
+    }
+    else if (digitalRead(this->data.led[0]) == SET_CLOSE)
+    {
+      if (arduino_setting.debug) Serial.println("2.2. BLOCCO: " + (String) this->data.label + " RICHIESTO");
+      this->lock();
+      this->SetLed(this->data.led[0], SET_OPEN);
+      if (this->data.period > 0) {
+        if (arduino_setting.debug) Serial.println("5 ACCENSIONE RELE DI: " + (String) this->data.label + " AVVIATO");
+        this->delayled.start(this->data.period, AsyncDelay::MILLIS);
+        this->status_led = "MOVING UP";
+      }
+    }
+  } else if (this->data.type_object == MYD_TYPE_BLIND2_DW) {
+    //RELE B e A (B acceso fase A acceso ritorno)
+    if (digitalRead(this->data.led[1]) == SET_OPEN and digitalRead(this->data.led[0]) == SET_CLOSE)
+    {
+      // CONDIZIONE DI MYD_TYPE_BLIND2_DW ATTIVO QUINDI BLOCCA
+      if (arduino_setting.debug) Serial.println("2.2. BLOCCO: " + (String) this->data.label + " RICHIESTO");
+      this->lock();
+    }
+    else if (digitalRead(this->data.led[0]) == SET_CLOSE and digitalRead(this->data.led[1]) == SET_CLOSE)
+    {
+      this->SetLed(this->data.led[0], SET_OPEN);
+      delay(10);
+      this->SetLed(this->data.led[1], SET_OPEN);
+      if (this->data.period > 0) {
+        if (arduino_setting.debug) Serial.println("5 ACCENSIONE RELE DI: " + (String) this->data.label + " AVVIATO");
+        this->delayled.start(this->data.period, AsyncDelay::MILLIS);
+        this->status_led = "MOVING DW";
+      }
     }
   } else if (this->data.type_object == MYD_TYPE_COMPLEX) {
     // TODO
@@ -349,9 +412,11 @@ void MyDomotic::close(void)
 }
 
 // METODO PER CAMBIARE DI STATO UN LED
-void MyDomotic::SetLed(int LED, int level) {
+void MyDomotic::SetLed(int LED, int level)
+{
   delay(10);
   digitalWrite(LED, level);
+  this->data._led_state = level;
   if(this->configuration_setup) this->save();
   String json = "{\"host\":\"" + (String) arduino_setting.hostname + "\", " +
                 "\"state\":\"ready\", " +
@@ -359,55 +424,57 @@ void MyDomotic::SetLed(int LED, int level) {
                 "\"btn\":\"" + (String) this->data.btn + "\", " +
                 "\"period\":\"" + (String) this->data.period + "\", " +
                 "\"status\":\"" + (String) digitalRead(LED) + "\"}";
-  //if (arduino_setting.debug) Serial.println(json);
-  if (this->client_mqtt_enable && this->data.led[0] == LED) {
+
     #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
-    //if (arduino_setting.debug) Serial.println("Start domoticz");
-    if (arduino_setting.domoticz) this->client->publish(arduino_setting.domoticz_out, json.c_str());
-    //if (arduino_setting.debug) Serial.println("Published domoticz");
-    String topic1 = PREFIX_STAT + "/" + (String) arduino_setting.topic + "/STATUS";
-    this->client->publish(topic1.c_str(), this->to_json().c_str());
-    //if (arduino_setting.debug) Serial.println("Published topic1");
-    String topic2 = PREFIX_STAT + "/" + (String) arduino_setting.topic + "/LED";
-    this->client->publish(topic2.c_str(), this->to_json().c_str());
-    //if (arduino_setting.debug) Serial.println("Published topic2");
+    if (this->client_mqtt_enable && this->data.led[0] == LED) {
+      if (arduino_setting.domoticz) this->client->publish(arduino_setting.domoticz_out, json.c_str());
+      String topic1 = PREFIX_STAT + "/" + (String) arduino_setting.topic + "/STATUS";
+      this->client->publish(topic1.c_str(), this->to_json().c_str());
+      String topic2 = PREFIX_STAT + "/" + (String) arduino_setting.topic + "/LED";
+      this->client->publish(topic2.c_str(), this->to_json().c_str());
+    }
     #endif
-  }
 }
 
 #if ETHERNETSUPPORT == 1
-  void MyDomotic::mqttset(PubSubClient mqtt){
+  void MyDomotic::mqttset(PubSubClient mqtt)
+  {
     this->client = &mqtt;
     this->client_mqtt_enable = true;
   }
 #elif ETHERNETSUPPORT == 2
-  void MyDomotic::mqttset(ELClientMqtt mqtt){
+  void MyDomotic::mqttset(ELClientMqtt mqtt)
+  {
     this->client = &mqtt;
     this->client_mqtt_enable = true;
   }
 #endif
 
 // METODO PER CAMBIARE DI STATO UN LED
-void MyDomotic::save() {
+void MyDomotic::save()
+{
   EEPROM.put(this->data._eepromAddress, this->data);
 }
 
 
-String MyDomotic::getTopic(void) {
+String MyDomotic::getTopic(void)
+{
   // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
   // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
   return PREFIX_CMD + "/" + (String) arduino_setting.topic + "/action/" + (String) this->data.id;
 }
 
 
-String MyDomotic::setObj(void) {
+String MyDomotic::setObj(void)
+{
   // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
   // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
   return PREFIX_SET + "/" + (String) arduino_setting.topic + "/" + (String) this->data.id;
 }
 
 
-void MyDomotic::loadingData(String data){
+void MyDomotic::loadingData(String data)
+{
   StaticJsonBuffer<200> jsonBuffer;
   JsonObject& root = jsonBuffer.parseObject(data);
   if(root["label"]        != "") strncpy(this->data.label, root["label"], sizeof(this->data.label));
