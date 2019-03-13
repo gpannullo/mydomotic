@@ -6,10 +6,15 @@
 
 extern const int count_digital_input;
 extern const int count_custom_input;
+extern const bool LOGICAL_LEVEL_WORK;
+extern const bool DOMOTICZ_WORK;
 extern MyDomotic mydomotic_obj [];
 extern CustomBtn mydomotic_custom_obj [];
 extern const int digital_input [];
 extern const int digital_output [];
+extern const int digital_check [];
+extern const int digital_period [];
+extern const int digital_command [];
 extern const int custom_input [];
 extern const int RESET_TIMEOUT;
 extern const bool WaitTimeOutBeforeReset;
@@ -71,7 +76,8 @@ void SaveData(ArduinoSetting settings){
 #endif
 
 
-void set_initial_data(){
+void set_initial_data()
+{
   PrintINFO("",1,false);
   PrintINFO("",1,false);
   PrintINFO("LOADING Initial DATA Setting... ",0);
@@ -79,8 +85,8 @@ void set_initial_data(){
   ArduinoSetting arduino_setting_tmp;
   strncpy(arduino_setting_tmp.hostname, ARDUINOHOST.c_str(), sizeof(arduino_setting_tmp.hostname));
   arduino_setting_tmp.debug = DEBUG_SERIAL;
-  arduino_setting_tmp.domoticz = true;
-  arduino_setting_tmp.logical_work_level = false;
+  arduino_setting_tmp.domoticz = DOMOTICZ_WORK;
+  arduino_setting_tmp.logical_work_level = LOGICAL_LEVEL_WORK;
   arduino_setting_tmp._eepromAddress=localeepromAddress;
   strncpy(arduino_setting_tmp.topic, "arduino_t", sizeof(arduino_setting_tmp.topic));
   strncpy(arduino_setting_tmp.domoticz_in, "domoticz/in", sizeof(arduino_setting_tmp.domoticz_in));
@@ -92,16 +98,17 @@ void set_initial_data(){
   PrintINFO("LOADING Initial MyDomotic data objects ", 0);
   for(int i=0; i<count_digital_input; i++){
     MyDomoticSetting data_tmp = {
-            {digital_output[i],0},    //led e led_check
-            0,                      //period timer
-            MYD_TYPE_SWITCH,        //type_object
-            "BTN LABEL",            //LABEL
-            0,                      //IDX
-            (i + 1),                //ID
-            digital_input[i],       //BTN
-            localeepromAddress,     //_eepromAddress
-            0,                      //_period_state
-            HIGH                    //_led_state
+            {digital_output[i],digital_check[i]},     //led e led_check
+            digital_period[i]*1000,                   //period timer
+                                                      //convert second in millisecond
+            digital_command[i],                       //type_object
+            "BTN LABEL",                              //LABEL
+            0,                                        //IDX
+            (i + 1),                                  //ID
+            digital_input[i],                         //BTN
+            localeepromAddress,                       //_eepromAddress
+            0,                                        //_period_state
+            SET_CLOSE                                 //_led_state
           };
     EEPROM.put(localeepromAddress, data_tmp);
     localeepromAddress += sizeof(MyDomoticSetting);
@@ -122,7 +129,8 @@ void set_initial_data(){
 }
 
 
-void verifica_reset_data(){
+void verifica_reset_data()
+{
   pinMode(RESET_PIN_MODE, INPUT_PULLUP);
   int resetlevel = digitalRead(RESET_PIN_MODE);
   if (resetlevel == LOW){
@@ -157,7 +165,8 @@ void verifica_reset_data(){
   }
 }
 
-void set_logical_work_level(){
+void set_logical_work_level()
+{
   if(arduino_setting.logical_work_level){
     SET_CLOSE = LOW;
     SET_OPEN = HIGH;
@@ -167,7 +176,8 @@ void set_logical_work_level(){
   }
 }
 
-void load_stored_data(){
+void load_stored_data()
+{
   int eepromAddress=0;
   EEPROM.get(eepromAddress, arduino_setting);
   set_logical_work_level();
@@ -207,23 +217,28 @@ void load_stored_data(){
   DPrintln("");
 }
 
-String mqtt_topic_cmd(){
+String mqtt_topic_cmd()
+{
   return PREFIX_CMD + "/" + (String) arduino_setting.topic;
 }
 
-String mqtt_topic_set(){
+String mqtt_topic_set()
+{
   return PREFIX_SET + "/" + (String) arduino_setting.topic;
 }
 
-String mqtt_topic_stat(){
+String mqtt_topic_stat()
+{
   return PREFIX_STAT + "/" +  (String) arduino_setting.topic;
 }
 
-String mqtt_topic_status(){
+String mqtt_topic_status()
+{
     return mqtt_topic_stat() + "/STATUS";
 }
 
-String system_status(){
+String system_status()
+{
     return  "{\"hostname\":\"" + (String) arduino_setting.hostname + "\"" +
             ",\"board\":\"" + (String) BOARDNAMETYPE + "\"" +
             ",\"topic\":\"" + (String) arduino_setting.topic + "\"" +
