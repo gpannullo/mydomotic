@@ -407,9 +407,6 @@ void MyDomotic::SetLed(int LED, int level)
         this->data._led_state = level;
         this->save();
     }
-    Serial.println("azione led:");
-    Serial.println(LED);
-    Serial.println(level);
     String json = "{\"host\":\"" + (String) arduino_setting.hostname + "\", " +
                   "\"state\":\"ready\", " +
                   "\"led\":\"" + (String) LED + "\", " +

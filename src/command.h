@@ -19,6 +19,7 @@ extern const int custom_input [];
 extern const int RESET_TIMEOUT;
 extern const bool WaitTimeOutBeforeReset;
 extern const int RESET_PIN_MODE;
+extern const int RESET_PIN_LED;
 extern const String BOARDNAMETYPE;
 extern String ARDUINOHOST;
 extern bool DEBUG_SERIAL;
@@ -81,7 +82,7 @@ void set_initial_data()
   PrintINFO("",1,false);
   PrintINFO("",1,false);
   PrintINFO("LOADING Initial DATA Setting... ",0);
-  int localeepromAddress=0;
+  int localeepromAddress=sizeof(int);
   ArduinoSetting arduino_setting_tmp;
   strncpy(arduino_setting_tmp.hostname, ARDUINOHOST.c_str(), sizeof(arduino_setting_tmp.hostname));
   arduino_setting_tmp.debug = DEBUG_SERIAL;
@@ -97,6 +98,10 @@ void set_initial_data()
 
   PrintINFO("LOADING Initial MyDomotic data objects ", 0);
   for(int i=0; i<count_digital_input; i++){
+    digitalWrite(RESET_PIN_LED, HIGH);
+    delay(10);
+    digitalWrite(RESET_PIN_LED, LOW);
+    delay(10);
     MyDomoticSetting data_tmp = {
             {digital_output[i],digital_check[i]},     //led e led_check
             digital_period[i]*1000,                   //period timer
@@ -129,26 +134,53 @@ void set_initial_data()
 }
 
 
-void verifica_reset_data()
+void test_first_powered()
+{
+  int localeepromAddress=0;
+  int val = 0;
+  EEPROM.get(localeepromAddress, val);
+  if (val == 0){
+    for(int i=0; i<20; i++){
+      digitalWrite(RESET_PIN_LED, HIGH);
+      delay(5);
+      digitalWrite(RESET_PIN_LED, LOW);
+      delay(5);
+    }
+    EEPROM.put(localeepromAddress, 1);
+    set_initial_data();
+  }
+}
+
+
+void test_reset_request()
 {
   pinMode(RESET_PIN_MODE, INPUT_PULLUP);
+  pinMode(RESET_PIN_LED, OUTPUT);
   int resetlevel = digitalRead(RESET_PIN_MODE);
   if (resetlevel == LOW){
     if (WaitTimeOutBeforeReset){
       PrintINFO("RESET MODE Request... wait " + (String) RESET_TIMEOUT + "s before remove all");
       for (int i=0;i<RESET_TIMEOUT;i++){
         PrintINFO((String) (RESET_TIMEOUT-i) + "s");
-        delay(1000);
+        digitalWrite(RESET_PIN_LED, HIGH);
+        delay(500);
+        digitalWrite(RESET_PIN_LED, LOW);
+        delay(500);
       }
     }
     int resetlevel = digitalRead(RESET_PIN_MODE);
     if (resetlevel == LOW){
+      digitalWrite(RESET_PIN_LED, HIGH);
       PrintINFO("RESET MODE Initialize:");
       int printvar = 0;
       for (unsigned int i = 0 ; i < EEPROM.length() ; i++) {
         if(EEPROM.read(i) != 0){                     //skip already "empty" addresses
           EEPROM.write(i, 0);                        //write 0 to address i
           PrintINFO(".",0,false);
+          digitalWrite(RESET_PIN_LED, HIGH);
+          delay(10);
+          digitalWrite(RESET_PIN_LED, LOW);
+          delay(10);
           printvar ++;
           if (printvar == 128){
             printvar=0;

@@ -10,6 +10,7 @@
 
 #include "command.h"
 #include "platform.h"
+#include "platform_custom.h"
 
 /************************************************************************************************/
 /************************************************************************************************/
@@ -21,7 +22,8 @@ bool DEBUG_SERIAL                     = true;
 bool ENABLE_CONFIGURE                 = false;
 const int RESET_TIMEOUT               = 10;
 const bool WaitTimeOutBeforeReset     = true;
-const int RESET_PIN_MODE              = 13;
+const int RESET_PIN_MODE              = 14;
+const int RESET_PIN_LED               = 13;
 ArduinoSetting arduino_setting;
 AsyncDelay status_time;
 long status_time_refresh              = (1000L * 60);
@@ -311,10 +313,10 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
 
 void setup() {
   Serial.begin(115200);
-  pinMode(RESET_PIN_MODE, INPUT_PULLUP);
-  verifica_reset_data();
-
+  //test_first_powered();
+  test_reset_request();
   load_stored_data();
+  set_logical_work_level();
 
   PrintINFO("",1,false);
   PrintINFO("Starting system...");
@@ -373,6 +375,7 @@ void setup() {
   #endif
   status_time.start(status_time_refresh, AsyncDelay::MILLIS);
   PrintINFO("SETUP HOSTNAME: " + (String) arduino_setting.hostname);
+  PrintINFO("SETUP BOARDNAMETYPE: " + BOARDNAMETYPE);
   PrintINFO("SETUP SYSTEM STARTED!");
 }
 
