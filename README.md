@@ -17,7 +17,7 @@ Dependency Graph:
 |   |-- <EEPROM> 2.0          (inside)
 ```
 
-#Howto install esplink firmware
+# Howto install esplink firmware
 
 I have used for my work a esp01-s with 1M of memory but standard version (512K) is also good got it. The dirrent is as you programming it: For example for my esp01s I have used last stable version (3.0.14 at http://s3.voneicken.com/esp-link/esp-link-v3.0.14-g963ffbb.tgz). After downloaded this archive and extract all file user this command for programming:
 
