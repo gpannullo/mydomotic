@@ -271,7 +271,7 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
             arduino_setting.logical_work_level = true;
           }
           SaveData(arduino_setting);
-          set_logical_work_level();
+          set_logical_work_level(arduino_setting.logical_work_level);
         }
       }
     }
@@ -316,7 +316,6 @@ void setup() {
   //test_first_powered();
   test_reset_request();
   load_stored_data();
-  set_logical_work_level();
 
   PrintINFO("",1,false);
   PrintINFO("Starting system...");

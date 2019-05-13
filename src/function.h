@@ -39,12 +39,15 @@ void DPrintln(String messaggio, bool prefix = true){
   if(arduino_setting.debug) PrintDEBUG(messaggio, 1, prefix);
 }
 
-const String Str2Json(String a){
+const String Str2Json(String a)
+{
   a = "\"" + a + "\"";
   return a;
 }
 
-String bool2String(bool c){
+
+String bool2String(bool c)
+{
   if(c){
     return "ON";
   }else{
@@ -52,7 +55,9 @@ String bool2String(bool c){
   }
 }
 
-String int2String(int c){
+
+String int2String(int c)
+{
   if(c == 0){
     return "ON";
   }else{
@@ -60,10 +65,24 @@ String int2String(int c){
   }
 }
 
-String level2String(bool c){
+
+String level2String(bool c)
+{
   if(c){
     return "SET_OPEN on level HIGH";
   }else{
     return "SET_OPEN on level LOW";
+  }
+}
+
+
+void set_logical_work_level(bool logical_work_level = true)
+{
+  if(logical_work_level){
+    SET_CLOSE = LOW;
+    SET_OPEN = HIGH;
+  } else {
+    SET_CLOSE = HIGH;
+    SET_OPEN = LOW;
   }
 }

@@ -93,6 +93,7 @@ void set_initial_data()
   strncpy(arduino_setting_tmp.domoticz_in, "domoticz/in", sizeof(arduino_setting_tmp.domoticz_in));
   strncpy(arduino_setting_tmp.domoticz_out, "domoticz/out", sizeof(arduino_setting_tmp.domoticz_out));
   EEPROM.put(localeepromAddress, arduino_setting_tmp);
+  set_logical_work_level(LOGICAL_LEVEL_WORK);
   PrintINFO("DONE!",1,false);
   localeepromAddress += sizeof(ArduinoSetting);
 
@@ -104,8 +105,7 @@ void set_initial_data()
     delay(10);
     MyDomoticSetting data_tmp = {
             {digital_output[i],digital_check[i]},     //led e led_check
-            digital_period[i]*1000,                   //period timer
-                                                      //convert second in millisecond
+            (1000L * digital_period[i]),              //period timer in second
             digital_command[i],                       //type_object
             "BTN LABEL",                              //LABEL
             0,                                        //IDX
@@ -197,22 +197,12 @@ void test_reset_request()
   }
 }
 
-void set_logical_work_level()
-{
-  if(arduino_setting.logical_work_level){
-    SET_CLOSE = LOW;
-    SET_OPEN = HIGH;
-  } else {
-    SET_CLOSE = HIGH;
-    SET_OPEN = LOW;
-  }
-}
 
 void load_stored_data()
 {
-  int eepromAddress=0;
+  int eepromAddress=sizeof(int);
   EEPROM.get(eepromAddress, arduino_setting);
-  set_logical_work_level();
+  set_logical_work_level(arduino_setting.logical_work_level);
   eepromAddress += sizeof(ArduinoSetting);
   /*
   Serial.println(arduino_setting.hostname);
