@@ -19,11 +19,14 @@ Dependency Graph:
 
 # Howto install esplink firmware
 
-I have used for my work a esp01-s with 1M of memory but standard version (512K) is also good got it. The dirrent is as you programming it: For example for my esp01s I have used last stable version (3.0.14 at http://s3.voneicken.com/esp-link/esp-link-v3.0.14-g963ffbb.tgz). After downloaded this archive and extract all file user this command for programming:
+I have used for my work a esp01-s with 1M of memory but standard version (512K) is also good got it. The dirrent is as you programming it: For example for my esp01s I have used last stable version (3.0.14 at http://s3.voneicken.com/esp-link/esp-link-v3.0.14-g963ffbb.tgz). After downloaded this archive and extract all file, use this command for programming:
 
 ```
-esptool.py --port /dev/tty.usbserial-A50285BI --baud 115200 erase_flash #for erase all data on esp01
-esptool.py --port /dev/tty.usbserial-A50285BI --baud 115200 write_flash \
+esptool.py --port /dev/tty.usbserial-A50285BI \
+            --baud 115200 erase_flash #for erase all data on esp01
+            
+esptool.py --port /dev/tty.usbserial-A50285BI \
+            --baud 115200 write_flash \
             -fs 1MB -ff 40m \
             0x00000 boot_v1.6.bin \
             0x1000 user1.bin \
