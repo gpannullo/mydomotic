@@ -2,6 +2,7 @@
 
 #if ARDUINOTYPE == 4096     //ARDUINO MEGA
   const String BOARDNAMETYPE    =   "Arduino MEGA";
+  const char* MQTTTOPICPREFIX   =   "arduino_t";
   const bool LOGICAL_LEVEL_WORK =   true;
   const bool DOMOTICZ_WORK      =   true;
   // PORTE                          { 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16};
@@ -14,6 +15,7 @@
   const int custom_input []     =   {15,16,17,18,19,20,21};
 #elif ARDUINOTYPE == 1024   //ARDUINO UNO
   const String BOARDNAMETYPE    =   "Arduino UNO";
+  const char* MQTTTOPICPREFIX   =   "arduino_t";
   const bool LOGICAL_LEVEL_WORK =   true;
   const bool DOMOTICZ_WORK      =   true;
   const int digital_input []    =   {2,3,4,5};
@@ -29,6 +31,7 @@
   #endif
 #elif ARDUINOTYPE == 512  //ARDUINO NANO
   const String BOARDNAMETYPE    =   "Arduino NANO";
+  const char* MQTTTOPICPREFIX   =   "arduino_t";
   const bool LOGICAL_LEVEL_WORK =   true;
   const bool DOMOTICZ_WORK      =   true;
   const int digital_input []    =   {2,3,4,5};
