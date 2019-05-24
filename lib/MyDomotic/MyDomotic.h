@@ -19,11 +19,13 @@
   #include <Ethernet.h>
   #include <PubSubClient.h>
   extern const bool NETWORK_ENABLE;
+  extern bool mqtt_connect_status;
 #elif ETHERNETSUPPORT == 2
   #include <ELClient.h>
   //#include <ELClientCmd.h>
   #include <ELClientMqtt.h>
   #include <ELClientWebServer.h>
+  extern bool mqtt_connect_status;
 #endif
 
 extern ArduinoSetting arduino_setting;
@@ -34,8 +36,8 @@ const int MYD_TYPE_SWITCH     = 0;
 const int MYD_TYPE_SWITCH2    = 1;
 const int MYD_TYPE_BUTTON     = 20;
 const int MYD_TYPE_BLIND      = 40;
-const int MYD_TYPE_BLIND2_UP  = 41;
-const int MYD_TYPE_BLIND2_DW  = 42;
+const int MYD_TYPE_BLIND2_UP  = 41;  //Connect line on neutral
+const int MYD_TYPE_BLIND2_DW  = 42;  //Connect line on line and neutral
 const int MYD_TYPE_COMPLEX    = 99;
 
 class MyDomotic

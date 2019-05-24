@@ -7,6 +7,7 @@
 extern const int count_digital_input;
 extern const int count_custom_input;
 extern const bool LOGICAL_LEVEL_WORK;
+extern const char* MQTTTOPICPREFIX;
 extern const bool DOMOTICZ_WORK;
 extern MyDomotic mydomotic_obj [];
 extern CustomBtn mydomotic_custom_obj [];
@@ -89,7 +90,7 @@ void set_initial_data()
   arduino_setting_tmp.domoticz = DOMOTICZ_WORK;
   arduino_setting_tmp.logical_work_level = LOGICAL_LEVEL_WORK;
   arduino_setting_tmp._eepromAddress=localeepromAddress;
-  strncpy(arduino_setting_tmp.topic, "arduino_t", sizeof(arduino_setting_tmp.topic));
+  strncpy(arduino_setting_tmp.topic, MQTTTOPICPREFIX, sizeof(arduino_setting_tmp.topic));
   strncpy(arduino_setting_tmp.domoticz_in, "domoticz/in", sizeof(arduino_setting_tmp.domoticz_in));
   strncpy(arduino_setting_tmp.domoticz_out, "domoticz/out", sizeof(arduino_setting_tmp.domoticz_out));
   EEPROM.put(localeepromAddress, arduino_setting_tmp);

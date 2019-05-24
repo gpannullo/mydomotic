@@ -7,7 +7,6 @@
  #define ETHERNETSUPPORT 0
 #endif
 
-
 #include "command.h"
 #include "platform.h"
 #include "platform_custom.h"
@@ -29,6 +28,7 @@ AsyncDelay status_time;
 long status_time_refresh              = (1000L * 60);
 int SET_OPEN                          = LOW;
 int SET_CLOSE                         = HIGH;
+bool mqtt_connect_status              = false;
 
 /****************************************
   Define board pins input/output count
@@ -101,6 +101,7 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
         client_mqtt.subscribe((char *)mydomotic_obj[i].getTopic().c_str());
       }
     }
+    mqtt_connect_status = true;
     return client_mqtt.connected();
   }
 
@@ -125,7 +126,6 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
     ELClient esp(&Serial);
 
     ELClientMqtt client_mqtt(&esp);                   // Initialize the MQTT client
-    bool connected;
     bool sync_ok = false;
     bool setup_ok = false;
     bool connect_ok = false;
@@ -152,12 +152,12 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
         client_mqtt.subscribe(mydomotic_obj[i].getTopic().c_str());
         client_mqtt.subscribe(mydomotic_obj[i].setObj().c_str());
       }
-      connected = true;
+      mqtt_connect_status = true;
     }
 
     // Callback when MQTT is disconnected
     void mqttDisconnected(void* response) {
-      connected = false;
+      mqtt_connect_status = false;
     }
 
     // Callback when an MQTT message arrives for one of our subscriptions

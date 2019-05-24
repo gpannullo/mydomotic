@@ -407,16 +407,20 @@ void MyDomotic::SetLed(int LED, int level)
         this->data._led_state = level;
         this->save();
     }
-    String json = "{\"host\":\"" + (String) arduino_setting.hostname + "\", " +
-                  "\"state\":\"ready\", " +
-                  "\"led\":\"" + (String) LED + "\", " +
-                  "\"btn\":\"" + (String) this->data.btn + "\", " +
-                  "\"period\":\"" + (String) this->data.period + "\", " +
-                  "\"status\":\"" + (String) digitalRead(LED) + "\"}";
 
     #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
-    if (this->client_mqtt_enable && this->data.led[0] == LED) {
-      if (arduino_setting.domoticz) this->client->publish(arduino_setting.domoticz_out, json.c_str());
+    if (this->client_mqtt_enable && this->data.led[0] == LED && mqtt_connect_status)
+    {
+      if (arduino_setting.domoticz)
+      {
+        String json = "{\"host\":\"" + (String) arduino_setting.hostname + "\", " +
+                      "\"state\":\"ready\", " +
+                      "\"led\":\"" + (String) LED + "\", " +
+                      "\"btn\":\"" + (String) this->data.btn + "\", " +
+                      "\"period\":\"" + (String) this->data.period + "\", " +
+                      "\"status\":\"" + (String) digitalRead(LED) + "\"}";
+        this->client->publish(arduino_setting.domoticz_out, json.c_str());
+      }
       String topic1 = PREFIX_STAT + "/" + (String) arduino_setting.topic + "/STATUS";
       this->client->publish(topic1.c_str(), this->to_json().c_str());
       String topic2 = PREFIX_STAT + "/" + (String) arduino_setting.topic + "/LED";
