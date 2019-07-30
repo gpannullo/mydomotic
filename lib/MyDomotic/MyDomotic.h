@@ -84,6 +84,7 @@ public:
     void off(void);
     void lock(void);
     String getTopic(void);
+    String getTopicStatus(void);
     String setObj(void);
     String get_status(void);
     String to_str(void);

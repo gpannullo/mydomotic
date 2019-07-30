@@ -14,7 +14,7 @@ extern CustomBtn mydomotic_custom_obj [];
 extern const int digital_input [];
 extern const int digital_output [];
 extern const int digital_check [];
-extern const int digital_period [];
+extern const float digital_period [];
 extern const int digital_command [];
 extern const int custom_input [];
 extern const int RESET_TIMEOUT;
@@ -106,7 +106,7 @@ void set_initial_data()
     delay(10);
     MyDomoticSetting data_tmp = {
             {digital_output[i],digital_check[i]},     //led e led_check
-            (1000L * digital_period[i]),              //period timer in second
+            1000L * digital_period[i],              //period timer in second
             digital_command[i],                       //type_object
             "BTN LABEL",                              //LABEL
             0,                                        //IDX
@@ -265,6 +265,7 @@ String system_status()
     return  "{\"hostname\":\"" + (String) arduino_setting.hostname + "\"" +
             ",\"board\":\"" + (String) BOARDNAMETYPE + "\"" +
             ",\"topic\":\"" + (String) arduino_setting.topic + "\"" +
+            ",\"status\":\"" + mqtt_topic_status() + "\"" +
             ",\"domoticz\":\"" + bool2String(arduino_setting.domoticz) + "\"" +
             ",\"debug\":\"" + bool2String(arduino_setting.debug) + "\"" +
             ",\"SET_OPEN\":\"" + (String) SET_OPEN + "\"" +

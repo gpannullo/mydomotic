@@ -200,6 +200,7 @@ String MyDomotic::to_json(void)
           ", \"LED2\": \"" + (String) this->data.led[1] + "\"" + \
           ", \"TYPE\": \"" + (String) this->type_to_str() + "\"" + \
           ", \"STATUS\": \"" + (String) this->status_led + "\"" + \
+          ", \"TOPICSTATUS\": \"" + this->getTopicStatus() + "\"" + \
           ", \"PERIOD\": \"" + (String) this->data.period + "\"" + \
           ", \"TOPIC\": \"" + (String) this->getTopic() + "\"" + \
           ", \"SET\": \"" + (String) this->setObj() + "\"" + \
@@ -291,7 +292,6 @@ void MyDomotic::change(void)
     this->SetLed(this->data.led[0], SET_CLOSE);
   }
 }
-
 
 void MyDomotic::action(void)
 {
@@ -388,7 +388,6 @@ void MyDomotic::switch2(void)
   }
 }
 
-
 // METODO PER CHIUDERE LA PERSIANA
 // DA RIVEDERE COME SETTARE LO STATO
 void MyDomotic::close(void)
@@ -456,6 +455,14 @@ String MyDomotic::getTopic(void)
   // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
   // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
   return PREFIX_CMD + "/" + (String) arduino_setting.topic + "/action/" + (String) this->data.id;
+}
+
+
+String MyDomotic::getTopicStatus(void)
+{
+  // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
+  // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
+  return PREFIX_STAT + "/" + (String) arduino_setting.topic + "/status/" + (String) this->data.id;
 }
 
 
