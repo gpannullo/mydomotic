@@ -174,37 +174,35 @@ String MyDomotic::to_str(void)
   // CONVERSIONE DETTAGLI SETTINGS OGGETTO
   return  "  ID: " + (String) this->data.id + \
           ", IDX: " + (String) this->data.idx + \
-          ", Label: " + (String) this->data.label + \
-          ", BTN: " + (String) this->data.btn + \
+          /* ", BTN: " + (String) this->data.btn + \ */
           ", LED: " + (String) this->data.led[0] + \
           ", LEV: " + (String) digitalRead(this->data.led[0]) + \
           ", LED2: " + (String) this->data.led[1] + \
           ", TYPE: " + (String) this->type_to_str() + \
           ", STATUS: " + (String) this->status_led + \
           ", PERIOD: " + (String) this->data.period + \
-          ", TOPIC: " + (String) this->getTopic() + \
-          ", SET: " + (String) this->setObj() + \
-          ", eepromAddress: " + (String) this->data._eepromAddress + \
+          /* ", TOPIC: " + (String) this->getTopic() + \ */
+          /* ", SET: " + (String) this->setObj() + \ */
+          /* ", eepromAddress: " + (String) this->data._eepromAddress + \ */
           "";
 }
 
 String MyDomotic::to_json(void)
 {
   // CONVERSIONE DETTAGLI SETTINGS OGGETTO IN JSON
-  return  "{ \"ID\": \"" + (String) this->data.id + "\"" + \
-          ", \"IDX\": \"" + (String) this->data.idx + "\"" + \
-          ", \"Label\": \"" + (String) this->data.label + "\"" + \
-          ", \"BTN\": \"" + (String) this->data.btn + "\"" + \
-          ", \"LED\": \"" + (String) this->data.led[0] + "\"" + \
-          ", \"LEV\": \"" + (String) digitalRead(this->data.led[0]) + "\"" + \
-          ", \"LED2\": \"" + (String) this->data.led[1] + "\"" + \
-          ", \"TYPE\": \"" + (String) this->type_to_str() + "\"" + \
-          ", \"STATUS\": \"" + (String) this->status_led + "\"" + \
-          ", \"TOPICSTATUS\": \"" + this->getTopicStatus() + "\"" + \
-          ", \"PERIOD\": \"" + (String) this->data.period + "\"" + \
-          ", \"TOPIC\": \"" + (String) this->getTopic() + "\"" + \
-          ", \"SET\": \"" + (String) this->setObj() + "\"" + \
-          ", \"eepromAddress\": \"" + (String) this->data._eepromAddress + "\"" + \
+  return  "{\"ID\":\"" + (String) this->data.id + "\"" + \
+          ",\"IDX\":\"" + (String) this->data.idx + "\"" + \
+          /* ",\"BTN\":\"" + (String) this->data.btn + "\"" + \ */
+          ",\"LED\":\"" + (String) this->data.led[0] + "\"" + \
+          ",\"LEV\":\"" + (String) digitalRead(this->data.led[0]) + "\"" + \
+          ",\"LED2\":\"" + (String) this->data.led[1] + "\"" + \
+          ",\"TYPE\":\"" + (String) this->type_to_str() + "\"" + \
+          ",\"STATUS\":\"" + (String) this->status_led + "\"" + \
+          /* ", \"TOPICSTATUS\": \"" + this->getTopicStatus() + "\"" + \ */
+          ",\"PERIOD\":\"" + (String) this->data.period + "\"" + \
+          /* ", \"TOPIC\": \"" + (String) this->getTopic() + "\"" + \ */
+          /* ", \"SET\": \"" + (String) this->setObj() + "\"" + \ */
+          /* ", \"eepromAddress\": \"" + (String) this->data._eepromAddress + "\"" + \ */
           "}";
 }
 

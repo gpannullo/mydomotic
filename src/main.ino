@@ -25,7 +25,9 @@ const int RESET_PIN_MODE              = 14;
 const int RESET_PIN_LED               = 13;
 ArduinoSetting arduino_setting;
 AsyncDelay status_time;
+AsyncDelay status_setup;
 long status_time_refresh              = (1000L * 60);
+long status_setup_refresh             = (1000L * 60);
 int SET_OPEN                          = LOW;
 int SET_CLOSE                         = HIGH;
 bool mqtt_connect_status              = false;
@@ -127,12 +129,10 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
 
     ELClientMqtt client_mqtt(&esp);                   // Initialize the MQTT client
     bool sync_ok        = false;
-    bool setup_ok       = false;
-    bool connect_ok     = false;
-    bool esp_sync       = false;
     ELClientWebServer client_webserver(&esp);         // Initialize the Web-Server client
 
-    void wifiCb(void* response) {
+    void wifiCb(void* response)
+    {
       ELClientResponse *res = (ELClientResponse*)response;
       if (res->argc() == 1) {
         uint8_t status;
@@ -148,7 +148,8 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
     }
 
     // Callback when MQTT is connected
-    void mqttConnected(void* response) {
+    void mqttConnected(void* response)
+    {
       PrintINFO("EL-Client callback mqttConnected, starting..");
       for (int i = 0; i < count_digital_input; i++) {
         client_mqtt.subscribe(mydomotic_obj[i].getTopic().c_str());
@@ -160,12 +161,14 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
     }
 
     // Callback when MQTT is disconnected
-    void mqttDisconnected(void* response) {
+    void mqttDisconnected(void* response)
+    {
       mqtt_connect_status = false;
     }
 
     // Callback when an MQTT message arrives for one of our subscriptions
-    void callback(void* response) {
+    void callback(void* response)
+    {
       ELClientResponse *res = (ELClientResponse *)response;
       String topic  = res->popString();
       String data   = res->popString();
@@ -177,7 +180,7 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
           for (int i = 0; i < count_digital_input; i++) {
             if (mydomotic_obj[i].setObj() == topic) {
               mydomotic_obj[i].loadingData(data);
-              client_mqtt.publish(mqtt_topic_status().c_str(),mydomotic_obj[i].to_json().c_str());
+              client_mqtt.publish(mydomotic_obj[i].getTopicStatus().c_str(),mydomotic_obj[i].to_json().c_str());
               i = count_digital_input;
               break;
             }
@@ -201,28 +204,9 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
       }
     }
 
-    void mqttPublished(void* response) {
+    void mqttPublished(void* response)
+    {
       PrintDEBUG("MQTT published");
-    }
-
-    void resetCb(void) {
-      sync_ok = esp.Sync();
-      if (!sync_ok){
-        PrintINFO("EL-Client (re-)starting!");
-        sync_ok = esp.Sync();
-        setup_ok=false;
-      }else {
-        if (!setup_ok){
-          PrintINFO("EL-Client synced! send setup now");
-          client_webserver.setup();
-          client_mqtt.setup();
-          for (int i = 0; i < count_digital_input; i++) {
-            //CHIAMATA AL SETUP DEGLI OGGETTI
-            mydomotic_obj[i].mqttset(client_mqtt);
-          }
-          setup_ok=true;
-        }
-      }
     }
 
     void mydomoticRefreshCb(char * url)
@@ -318,9 +302,44 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
         }
       }
     }
+
+    void resetCb(void)
+    {
+      PrintINFO("EL-Client resetCb test syncing");
+      int ind=0;
+      do {
+        ind++;
+        sync_ok = esp.Sync();
+        if (!sync_ok) PrintINFO("EL-Client sync failed! Test: " + (String) ind);
+      } while(!sync_ok and ind<3);
+      if(sync_ok){
+        PrintINFO("EL-Client synced! send setup now");
+
+        URLHandler *mydomotic_status = client_webserver.createURLHandler(F("/MyDStatus.html.json"));
+        mydomotic_status->loadCb.attach(mydomoticLoadCb);
+        mydomotic_status->refreshCb.attach(mydomoticRefreshCb);
+        mydomotic_status->setFieldCb.attach(mydomoticSetFieldCb);
+        mydomotic_status->buttonCb.attach(mydomoticDebugButtonPressCb);
+
+        client_mqtt.connectedCb.attach(mqttConnected);
+        client_mqtt.disconnectedCb.attach(mqttDisconnected);
+        client_mqtt.publishedCb.attach(mqttPublished);
+        client_mqtt.dataCb.attach(callback);
+
+        client_webserver.setup();
+        client_mqtt.setup();
+        for (int i = 0; i < count_digital_input; i++) {
+          //CHIAMATA AL SETUP DEGLI OGGETTI
+          mydomotic_obj[i].mqttset(client_mqtt);
+        }
+      } else {
+        PrintINFO("EL-Client NOT synced!");
+      }
+    }
 #endif
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
   //test_first_powered();
   test_reset_request();
@@ -353,41 +372,33 @@ void setup() {
     client_mqtt.setCallback(callback);
     reconnect();
   #elif ETHERNETSUPPORT  == 2
-    PrintINFO("EL-Client mode start");
     esp.resetCb = resetCb;
-
-    URLHandler *mydomotic_status = client_webserver.createURLHandler(F("/MyDStatus.html.json"));
-    mydomotic_status->loadCb.attach(mydomoticLoadCb);
-    mydomotic_status->refreshCb.attach(mydomoticRefreshCb);
-    mydomotic_status->setFieldCb.attach(mydomoticSetFieldCb);
-    mydomotic_status->buttonCb.attach(mydomoticDebugButtonPressCb);
-
-    client_mqtt.connectedCb.attach(mqttConnected);
-    client_mqtt.disconnectedCb.attach(mqttDisconnected);
-    client_mqtt.publishedCb.attach(mqttPublished);
-    client_mqtt.dataCb.attach(callback);
-
   #endif
   status_time.start(status_time_refresh, AsyncDelay::MILLIS);
+  status_setup.start(status_time_refresh, AsyncDelay::MILLIS);
   PrintINFO("SETUP HOSTNAME: " + (String) arduino_setting.hostname);
   PrintINFO("SETUP BOARDNAMETYPE: " + BOARDNAMETYPE);
   PrintINFO("SETUP SYSTEM STARTED!");
 }
 
 
-void loop() {
+void loop()
+{
   #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
   if (status_time.isExpired()) {
-    #if ETHERNETSUPPORT == 2
-    if(!sync_ok)
-    {
-      resetCb();
-    }
-    #endif
     if (mqtt_connect_status) {
+      PrintINFO("EL-Client send Mqtt Status");
       client_mqtt.publish(mqtt_topic_status().c_str(),system_status().c_str());
       for (int i = 0; i < count_digital_input; i++) {
         client_mqtt.publish(mydomotic_obj[i].getTopicStatus().c_str(),mydomotic_obj[i].to_json().c_str());
+      }
+    } else {
+      PrintINFO("EL-Client send serial Status");
+      PrintINFO(system_status().c_str());
+      for (int i = 0; i < count_digital_input; i++) {
+        PrintINFO(mydomotic_obj[i].getTopicStatus().c_str(),0);
+        PrintINFO(" : ",0,false);
+        PrintINFO(mydomotic_obj[i].to_json().c_str(),1,false);
       }
     }
     status_time.repeat();
@@ -416,7 +427,11 @@ void loop() {
       client_mqtt.loop();
     }
   #elif ETHERNETSUPPORT == 2
-    esp.Process();
+    if(status_setup.isExpired() && !sync_ok){
+      resetCb();
+      if(!sync_ok) status_setup.repeat();
+    }
+    if(sync_ok) esp.Process();
   #endif
 
   #if ETHERNETSUPPORT == 0

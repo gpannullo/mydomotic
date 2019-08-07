@@ -104,9 +104,15 @@ void set_initial_data()
     delay(10);
     digitalWrite(RESET_PIN_LED, LOW);
     delay(10);
+    long timer = 0;
+    if(digital_period[i]<1 && digital_period[i]>0){
+        timer = (long) (digital_period[i] * 1000);
+    } else {
+        timer = 1000L * digital_period[i];
+    }
     MyDomoticSetting data_tmp = {
             {digital_output[i],digital_check[i]},     //led e led_check
-            1000L * digital_period[i],              //period timer in second
+            timer,                                    //period timer in second
             digital_command[i],                       //type_object
             "BTN LABEL",                              //LABEL
             0,                                        //IDX
