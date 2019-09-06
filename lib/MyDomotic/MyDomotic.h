@@ -27,6 +27,7 @@
   #include <ELClientWebServer.h>
   extern bool mqtt_connect_status;
 #endif
+extern bool send_status_action;
 
 extern ArduinoSetting arduino_setting;
 extern int SET_CLOSE;
@@ -47,11 +48,6 @@ private:
     int btn_read;
     MyDomoticSetting data;
     AsyncDelay delayled;
-    #if ETHERNETSUPPORT == 2
-      ELClientMqtt *client;
-    #elif ETHERNETSUPPORT == 1
-      PubSubClient *client;
-    #endif
     bool client_mqtt_enable = false;
     bool configuration_setup = false;
     String status_led;
@@ -68,6 +64,7 @@ private:
     void switch2 (void);
     void check_btn_state(void);
     void SetLed(int led, int level);
+    String Level2Sting(int led);
 
 
 public:
@@ -83,18 +80,14 @@ public:
     void on(void);
     void off(void);
     void lock(void);
-    String getTopic(void);
+    String getTopicCmd(void);
     String getTopicStatus(void);
     String setObj(void);
     String get_status(void);
     String to_str(void);
     String type_to_str(void);
     String to_json(void);
-    #if ETHERNETSUPPORT == 1
-      void mqttset(PubSubClient mqtt);
-    #elif ETHERNETSUPPORT == 2
-      void mqttset(ELClientMqtt mqtt);
-    #endif
+    String to_small_json(void);
     void set_setting(MyDomoticSetting data);
     MyDomoticSetting get_setting(void);
     void loadingData(String data);

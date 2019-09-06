@@ -80,6 +80,16 @@ void MyDomotic::off(void)
   this->lock();
 }
 
+String MyDomotic::Level2Sting(int led)
+{
+  if (SET_CLOSE == led){
+    return "OFF";
+  } else {
+    return "ON";
+  }
+
+}
+
 void MyDomotic::setup(void)
 {
   // EVITA SALVATAGGI INUTILI IN FASE DI SETUP
@@ -174,7 +184,7 @@ String MyDomotic::to_str(void)
   // CONVERSIONE DETTAGLI SETTINGS OGGETTO
   return  "  ID: " + (String) this->data.id + \
           ", IDX: " + (String) this->data.idx + \
-          /* ", BTN: " + (String) this->data.btn + \ */
+          ", BTN: " + (String) this->data.btn + \
           ", LED: " + (String) this->data.led[0] + \
           ", LEV: " + (String) digitalRead(this->data.led[0]) + \
           ", LED2: " + (String) this->data.led[1] + \
@@ -192,7 +202,7 @@ String MyDomotic::to_json(void)
   // CONVERSIONE DETTAGLI SETTINGS OGGETTO IN JSON
   return  "{\"ID\":\"" + (String) this->data.id + "\"" + \
           ",\"IDX\":\"" + (String) this->data.idx + "\"" + \
-          /* ",\"BTN\":\"" + (String) this->data.btn + "\"" + \ */
+          ",\"BTN\":\"" + (String) this->data.btn + "\"" + \
           ",\"LED\":\"" + (String) this->data.led[0] + "\"" + \
           ",\"LEV\":\"" + (String) digitalRead(this->data.led[0]) + "\"" + \
           ",\"LED2\":\"" + (String) this->data.led[1] + "\"" + \
@@ -204,6 +214,12 @@ String MyDomotic::to_json(void)
           /* ", \"SET\": \"" + (String) this->setObj() + "\"" + \ */
           /* ", \"eepromAddress\": \"" + (String) this->data._eepromAddress + "\"" + \ */
           "}";
+}
+
+String MyDomotic::to_small_json(void)
+{
+  // CONVERSIONE DETTAGLI SETTINGS OGGETTO IN JSON
+  return  "\"BTN" + (String) this->data.id + "\":\"" + Level2Sting(digitalRead(this->data.led[0])) + "\"";
 }
 
 String MyDomotic::get_status(void)
@@ -404,42 +420,9 @@ void MyDomotic::SetLed(int LED, int level)
         this->data._led_state = level;
         this->save();
     }
-
-    #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
-    if (this->client_mqtt_enable && this->data.led[0] == LED && mqtt_connect_status)
-    {
-      if (arduino_setting.domoticz)
-      {
-        String json = "{\"host\":\"" + (String) arduino_setting.hostname + "\", " +
-                      "\"state\":\"ready\", " +
-                      "\"led\":\"" + (String) LED + "\", " +
-                      "\"btn\":\"" + (String) this->data.btn + "\", " +
-                      "\"period\":\"" + (String) this->data.period + "\", " +
-                      "\"status\":\"" + (String) digitalRead(LED) + "\"}";
-        this->client->publish(arduino_setting.domoticz_out, json.c_str());
-      }
-      String topic1 = PREFIX_STAT + "/" + (String) arduino_setting.topic + "/STATUS";
-      this->client->publish(topic1.c_str(), this->to_json().c_str());
-      String topic2 = PREFIX_STAT + "/" + (String) arduino_setting.topic + "/LED";
-      this->client->publish(topic2.c_str(), this->to_json().c_str());
-    }
-    #endif
   }
+  send_status_action = true;
 }
-
-#if ETHERNETSUPPORT == 1
-  void MyDomotic::mqttset(PubSubClient mqtt)
-  {
-    this->client = &mqtt;
-    this->client_mqtt_enable = true;
-  }
-#elif ETHERNETSUPPORT == 2
-  void MyDomotic::mqttset(ELClientMqtt mqtt)
-  {
-    this->client = &mqtt;
-    this->client_mqtt_enable = true;
-  }
-#endif
 
 // METODO PER CAMBIARE DI STATO UN LED
 void MyDomotic::save()
@@ -448,11 +431,11 @@ void MyDomotic::save()
 }
 
 
-String MyDomotic::getTopic(void)
+String MyDomotic::getTopicCmd(void)
 {
   // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
   // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
-  return PREFIX_CMD + "/" + (String) arduino_setting.topic + "/action/" + (String) this->data.id;
+  return PREFIX_CMD + "/" + (String) arduino_setting.topic + "/" + (String) this->data.id;
 }
 
 
@@ -460,7 +443,7 @@ String MyDomotic::getTopicStatus(void)
 {
   // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
   // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
-  return PREFIX_STAT + "/" + (String) arduino_setting.topic + "/status/" + (String) this->data.id;
+  return PREFIX_STAT + "/" + (String) arduino_setting.topic + "/" + (String) this->data.id;
 }
 
 

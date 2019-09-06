@@ -97,7 +97,6 @@ void set_initial_data()
   set_logical_work_level(LOGICAL_LEVEL_WORK);
   PrintINFO("DONE!",1,false);
   localeepromAddress += sizeof(ArduinoSetting);
-
   PrintINFO("LOADING Initial MyDomotic data objects ", 0);
   for(int i=0; i<count_digital_input; i++){
     digitalWrite(RESET_PIN_LED, HIGH);
@@ -223,7 +222,7 @@ void load_stored_data()
   DPrintln("******************************************");
   DPrintln("******************************************");
   DPrintln("*********                         ********");
-  DPrintln("      " + (String) arduino_setting.hostname);
+  DPrintln("            " + (String) arduino_setting.hostname);
   DPrintln("*********                         ********");
   DPrintln("******************************************");
   DPrintln("******************************************");
@@ -261,20 +260,31 @@ String mqtt_topic_stat()
   return PREFIX_STAT + "/" +  (String) arduino_setting.topic;
 }
 
+String mqtt_topic_cmd_all(void)
+{
+  // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
+  // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
+  return PREFIX_CMD + "/" + (String) arduino_setting.topic + "/#";
+}
+
 String mqtt_topic_status()
 {
     return mqtt_topic_stat() + "/STATUS";
 }
 
+String mqtt_topic_status_led()
+{
+    return mqtt_topic_stat() + "/LED";
+}
+
 String system_status()
 {
-    return  "{\"hostname\":\"" + (String) arduino_setting.hostname + "\"" +
+    return  "\"hostname\":\"" + (String) arduino_setting.hostname + "\"" +
             ",\"board\":\"" + (String) BOARDNAMETYPE + "\"" +
             ",\"topic\":\"" + (String) arduino_setting.topic + "\"" +
             ",\"status\":\"" + mqtt_topic_status() + "\"" +
             ",\"domoticz\":\"" + bool2String(arduino_setting.domoticz) + "\"" +
             ",\"debug\":\"" + bool2String(arduino_setting.debug) + "\"" +
             ",\"SET_OPEN\":\"" + (String) SET_OPEN + "\"" +
-            ",\"SET_CLOSE\":\"" + (String) SET_CLOSE + "\"" +
-            "}";
+            ",\"SET_CLOSE\":\"" + (String) SET_CLOSE + "\"";
 }
