@@ -17,8 +17,7 @@
 /************************************************************************************************/
 /************************************************************************************************/
 
-bool 		        DEBUG_SERIAL                = true;
-bool 		        ENABLE_CONFIGURE            = false;
+bool 		        DEBUG_SERIAL                = false;
 const int 	    RESET_TIMEOUT               = 5;
 const bool 	    WaitTimeOutBeforeReset     	= true;
 const int 	    RESET_PIN_MODE              = 14;
@@ -99,7 +98,7 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
       // RI/CREA LE subscribe PER MQTT
 
       for (int i = 0; i < count_digital_input; i++) {
-        client_mqtt.subscribe((char *)mydomotic_obj[i].getTopicCmd().c_str());
+        client_mqtt.subscribe((char *)mydomotic_obj[i].getTopicCmd((String) arduino_setting.topic).c_str());
       }
     }
     mqtt_connect_status = true;
@@ -109,7 +108,7 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
   void callback(char* topicRecive, byte* payload, unsigned int length) {
     // CERCA L'OGGETTO MYDOMOTIC CON IL TOPIC RICEVUTO
     for (int i = 0; i < count_digital_input; i++) {
-      String topic = mydomotic_obj[i].getTopicCmd();
+      String topic = mydomotic_obj[i].getTopicCmd((String) arduino_setting.topic);
       if (String(topicRecive) == topic) {
         if(payload[0] == '0'){
           mydomotic_obj[i].off();
@@ -182,7 +181,7 @@ CustomBtn         mydomotic_custom_obj  [count_custom_input];
       }*/
       if (topic.substring(0,3) == PREFIX_CMD.substring(0,3)){
         for (int i = 0; i < count_digital_input; i++) {
-          if (mydomotic_obj[i].getTopicCmd() == topic) {
+          if (mydomotic_obj[i].getTopicCmd((String) arduino_setting.topic) == topic) {
             if(data == "0" || data =="OFF"){
               mydomotic_obj[i].off();
               i = count_digital_input;

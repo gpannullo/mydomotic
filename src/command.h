@@ -209,6 +209,7 @@ void load_stored_data()
   int eepromAddress=sizeof(int);
   EEPROM.get(eepromAddress, arduino_setting);
   set_logical_work_level(arduino_setting.logical_work_level);
+  DEBUG_SERIAL = arduino_setting.debug;
   eepromAddress += sizeof(ArduinoSetting);
   /*
   Serial.println(arduino_setting.hostname);
