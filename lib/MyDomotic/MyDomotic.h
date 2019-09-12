@@ -55,9 +55,9 @@ private:
 public:
     MyDomotic();
     MyDomotic(MyDomoticSetting data);
-    MyDomotic(String label, int btn, int led);
-    MyDomotic(String label, int btn, int led, long period);
-    MyDomotic(String label, int btn_up, int led_up, long period, int led_dw);
+    MyDomotic(int btn, int led);
+    MyDomotic(int btn, int led, long period);
+    MyDomotic(int btn_up, int led_up, long period, int led_dw);
 
     void setup(void);
     void loop(void);

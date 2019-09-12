@@ -14,15 +14,14 @@ struct ArduinoSetting {
   boolean debug;
   boolean domoticz;
   boolean logical_work_level;
-  char domoticz_in[20];
-  char domoticz_out[20];
+  char domoticz_in[15];
+  char domoticz_out[15];
 };
 
 struct MyDomoticSetting {
   int   led[3];                       //LED PRIMARIO DI RIFERIMENTO PER ATTIVAZIONE RELE'
   long  period;                       //EVENUALE TIMER
   int   type_object;                  //TIPO DI OGGETTO [SWITCH, BLIND, BUTTON*, BLIND2*]
-  char  label[20];                    //STRINGA DI RICONOSCIMENTO
   int   idx;                          //INDICE PER DOMOTICZ
   // PRIVATE VARIABLE
   int   id;                           //INDICE DELL'AZIONE
@@ -34,7 +33,7 @@ struct MyDomoticSetting {
 
 struct CustomPin {
   int   btn;                          //BOTTONE DELL'AZIONE
-  char  mqtt[50];
+  char  mqtt[5];
   char  topic[50];
   int   _eepromAddress;
 };
