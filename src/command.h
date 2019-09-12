@@ -113,7 +113,6 @@ void set_initial_data()
             {digital_output[i],digital_check[i]},     //led e led_check
             timer,                                    //period timer in second
             digital_command[i],                       //type_object
-            "BTN LABEL",                              //LABEL
             0,                                        //IDX
             (i + 1),                                  //ID
             digital_input[i],                         //BTN
