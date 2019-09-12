@@ -388,6 +388,7 @@ void setup()
   PrintINFO("SETUP SYSTEM STARTED!");
 }
 
+#if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
 void getMqttStatus()
 {
   String status_mydomotic = "{" + system_status() + ",";
@@ -400,6 +401,7 @@ void getMqttStatus()
   status_mydomotic = status_mydomotic + "}";
   client_mqtt.publish(mqtt_topic_status_led().c_str(),status_mydomotic.c_str());
 }
+#endif
 
 void loop()
 {
