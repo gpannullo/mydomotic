@@ -141,11 +141,11 @@ void MyDomotic::check_btn_state(void)
     delay(50);
     if(digitalRead(this->data.btn) == LOW){
       //ESEGUE LE AZIONI PREVISTE
-      if (DEBUG_SERIAL) Serial.println("1. BTN" + (String) this->data.id + " (" + (String) this->data.btn + ") PREMUTO");
+      Serial.println("1. BTN" + (String) this->data.id + " (" + (String) this->data.btn + ") PREMUTO");
       this->action();
       delay(10);
     }else{
-      if (DEBUG_SERIAL) Serial.println("BTN" + (String) this->data.id + " INTERFERENZA *****************************");
+      Serial.println("BTN" + (String) this->data.id + " INTERFERENZA *****************************");
     }
   } else if (this->btn_state != this->btn_read && this->data.type_object == MYD_TYPE_BUTTON) {
     delay(50);
