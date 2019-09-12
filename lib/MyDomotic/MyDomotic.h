@@ -15,23 +15,10 @@
 #include <ArduinoJson.h>
 #include "MyDomoticCore.h"
 
-#if ETHERNETSUPPORT == 1
-  #include <Ethernet.h>
-  #include <PubSubClient.h>
-  extern const bool NETWORK_ENABLE;
-  extern bool mqtt_connect_status;
-#elif ETHERNETSUPPORT == 2
-  #include <ELClient.h>
-  //#include <ELClientCmd.h>
-  #include <ELClientMqtt.h>
-  #include <ELClientWebServer.h>
-  extern bool mqtt_connect_status;
-#endif
 extern bool send_status_action;
-
-extern ArduinoSetting arduino_setting;
 extern int SET_CLOSE;
 extern int SET_OPEN;
+extern bool DEBUG_SERIAL;
 
 const int MYD_TYPE_SWITCH     = 0;
 const int MYD_TYPE_SWITCH2    = 1;
@@ -54,7 +41,6 @@ private:
 
 
     /* Methods */
-    //void lock(void);
     void open(void);
     void close(void);
     void setup_switch(void);
@@ -65,7 +51,6 @@ private:
     void check_btn_state(void);
     void SetLed(int led, int level);
     String Level2Sting(int led);
-
 
 public:
     MyDomotic();
@@ -80,9 +65,9 @@ public:
     void on(void);
     void off(void);
     void lock(void);
-    String getTopicCmd(void);
-    String getTopicStatus(void);
-    String setObj(void);
+    String getTopicCmd(String basic_topic);
+    String getTopicStatus(String basic_topic);
+    String setObj(String basic_topic);
     String get_status(void);
     String to_str(void);
     String type_to_str(void);
@@ -93,9 +78,5 @@ public:
     void loadingData(String data);
     void save (void);
 };
-
-
-
-
 
 #endif /* MyDomotic_h */

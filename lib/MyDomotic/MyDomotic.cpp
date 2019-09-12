@@ -72,7 +72,7 @@ void MyDomotic::lock(void)
     }
   }
   this->status_led = "LOCK";
-  if (arduino_setting.debug) Serial.println(this->status_led + " LED: " + this->data.label);
+  if (DEBUG_SERIAL) Serial.println(this->status_led + " LED: " + this->data.label);
 }
 
 void MyDomotic::off(void)
@@ -144,11 +144,11 @@ void MyDomotic::check_btn_state(void)
     delay(50);
     if(digitalRead(this->data.btn) == LOW){
       //ESEGUE LE AZIONI PREVISTE
-      if (arduino_setting.debug) Serial.println("1. BOTTONE di: " + (String) this->data.label + " (" + (String) this->data.btn + ") PREMUTO");
+      if (DEBUG_SERIAL) Serial.println("1. BOTTONE di: " + (String) this->data.label + " (" + (String) this->data.btn + ") PREMUTO");
       this->action();
       delay(10);
     }else{
-      if (arduino_setting.debug) Serial.println("BOTTONE di: " + (String) this->data.label + " INTERFERENZA *****************************");
+      if (DEBUG_SERIAL) Serial.println("BOTTONE di: " + (String) this->data.label + " INTERFERENZA *****************************");
     }
   } else if (this->btn_state != this->btn_read && this->data.type_object == MYD_TYPE_BUTTON) {
     delay(50);
@@ -208,11 +208,8 @@ String MyDomotic::to_json(void)
           ",\"LED2\":\"" + (String) this->data.led[1] + "\"" + \
           ",\"TYPE\":\"" + (String) this->type_to_str() + "\"" + \
           ",\"STATUS\":\"" + (String) this->status_led + "\"" + \
-          /* ", \"TOPICSTATUS\": \"" + this->getTopicStatus() + "\"" + \ */
           ",\"PERIOD\":\"" + (String) this->data.period + "\"" + \
-          /* ", \"TOPIC\": \"" + (String) this->getTopic() + "\"" + \ */
-          /* ", \"SET\": \"" + (String) this->setObj() + "\"" + \ */
-          /* ", \"eepromAddress\": \"" + (String) this->data._eepromAddress + "\"" + \ */
+          ", \"eepromAddress\": \"" + (String) this->data._eepromAddress + "\"" + \
           "}";
 }
 
@@ -238,7 +235,7 @@ void MyDomotic::loop(void)
       delay(10);
       this->SetLed(this->data.led[0], SET_CLOSE);
       this->status_led = "CLOSE";
-      if (arduino_setting.debug) Serial.println("END TIMER CLOSE LED: " + \
+      if (DEBUG_SERIAL) Serial.println("END TIMER CLOSE LED: " + \
                                       (String) this->data.led[1] + " E " + \
                                       (String) this->data.led[0] + " " + \
                                       (String) this->data.label);
@@ -250,7 +247,7 @@ void MyDomotic::loop(void)
       delay(10);
       this->SetLed(this->data.led[1], SET_CLOSE);
       this->status_led = "CLOSE";
-      if (arduino_setting.debug) Serial.println("END TIMER CLOSE LED: " + \
+      if (DEBUG_SERIAL) Serial.println("END TIMER CLOSE LED: " + \
                                       (String) this->data.led[0] + " E " + \
                                       (String) this->data.led[1] + " " + \
                                       (String) this->data.label);
@@ -258,7 +255,7 @@ void MyDomotic::loop(void)
   } else if (this->delayled.isExpired() && digitalRead(this->data.led[0]) == SET_OPEN && this->data.period > 0) {
     this->SetLed(this->data.led[0], SET_CLOSE);
     this->status_led = "CLOSE";
-    if (arduino_setting.debug) Serial.println("END TIMER CLOSE LED: " + (String) this->data.led[0] + " " + (String) this->data.label);
+    if (DEBUG_SERIAL) Serial.println("END TIMER CLOSE LED: " + (String) this->data.led[0] + " " + (String) this->data.label);
   }
   this->check_btn_state();
 }
@@ -272,18 +269,18 @@ void MyDomotic::open(void)
 {
   //VERIFICA CHE IL RELE' DI SALITA/DISCESA NON SIA GIA' IN AZIONE
   if (digitalRead(this->data.led[0]) == SET_CLOSE) {
-    if (arduino_setting.debug) Serial.println("3 BLOCCO DI TUTTI I RELE DI: " + (String) this->data.label + " AVVIATO");
+    if (DEBUG_SERIAL) Serial.println("3 BLOCCO DI TUTTI I RELE DI: " + (String) this->data.label + " AVVIATO");
     // CHIUDE IL RELE' DI DISCESA/SALITA
     lock();
-    if (arduino_setting.debug) Serial.println("4 ATTESA: " + (String) this->data.label);
+    if (DEBUG_SERIAL) Serial.println("4 ATTESA: " + (String) this->data.label);
     //ABILITA IL RELE' DI SALITA/DISCESA
     this->SetLed(this->data.led[0], SET_OPEN);
     if (this->data.period > 0) {
-      if (arduino_setting.debug) Serial.println("5 ACCENSIONE RELE DI: " + (String) this->data.label + " AVVIATO");
+      if (DEBUG_SERIAL) Serial.println("5 ACCENSIONE RELE DI: " + (String) this->data.label + " AVVIATO");
       this->delayled.start(this->data.period, AsyncDelay::MILLIS);
       this->status_led = "MOVING";
     }
-    if (arduino_setting.debug) {
+    if (DEBUG_SERIAL) {
       Serial.print(this->status_led);
       Serial.println(" LED: " + (String) this->data.led[0]);
     }
@@ -313,11 +310,11 @@ void MyDomotic::action(void)
     //VERIFICA SE IL PIN DEL RELE' CONTRARIO E' ACCESO
     if (digitalRead(this->data.led[1]) == SET_OPEN /*&& this->btn_read == LOW*/) {
       // SE GIA' ERA ACCESO, BLOCCA ENTRAMBI
-      if (arduino_setting.debug) Serial.println("2.2. BLOCCO: " + (String) this->data.label + " RICHIESTO");
+      if (DEBUG_SERIAL) Serial.println("2.2. BLOCCO: " + (String) this->data.label + " RICHIESTO");
       this->lock();
     } else {
       // AZIONA APERTURA RELE'
-      if (arduino_setting.debug) Serial.println("2.1 APERTURA RELE DI: " + (String) this->data.label + " RICHIESTO");
+      if (DEBUG_SERIAL) Serial.println("2.1 APERTURA RELE DI: " + (String) this->data.label + " RICHIESTO");
       this->open();
     }
   } else if (this->data.type_object == MYD_TYPE_BLIND2_UP) {
@@ -325,7 +322,7 @@ void MyDomotic::action(void)
     if (digitalRead(this->data.led[0]) == SET_OPEN and digitalRead(this->data.led[1]) == SET_OPEN)
     {
       // CONDIZIONE DI MYD_TYPE_BLIND2_UP ATTIVO QUINDI BLOCCA
-      if (arduino_setting.debug) Serial.println("2.2. BLOCCO: " + (String) this->data.label + " RICHIESTO");
+      if (DEBUG_SERIAL) Serial.println("2.2. BLOCCO: " + (String) this->data.label + " RICHIESTO");
       this->SetLed(this->data.led[0], SET_CLOSE);
       this->SetLed(this->data.led[1], SET_CLOSE);
     }
@@ -335,7 +332,7 @@ void MyDomotic::action(void)
       this->SetLed(this->data.led[1], SET_CLOSE);
       this->SetLed(this->data.led[0], SET_OPEN);
       if (this->data.period > 0) {
-        if (arduino_setting.debug) Serial.println("5 ACCENSIONE RELE DI: " + (String) this->data.label + " AVVIATO UP");
+        if (DEBUG_SERIAL) Serial.println("5 ACCENSIONE RELE DI: " + (String) this->data.label + " AVVIATO UP");
         this->delayled.start(this->data.period, AsyncDelay::MILLIS);
         this->status_led = "MOVING UP";
       }
@@ -354,7 +351,7 @@ void MyDomotic::action(void)
       delay(10);
       this->SetLed(this->data.led[1], SET_OPEN);
       if (this->data.period > 0) {
-        if (arduino_setting.debug) Serial.println("5 ACCENSIONE RELE DI: " + (String) this->data.label + " AVVIATO DW");
+        if (DEBUG_SERIAL) Serial.println("5 ACCENSIONE RELE DI: " + (String) this->data.label + " AVVIATO DW");
         this->delayled.start(this->data.period, AsyncDelay::MILLIS);
         this->status_led = "MOVING DW";
       }
@@ -431,27 +428,27 @@ void MyDomotic::save()
 }
 
 
-String MyDomotic::getTopicCmd(void)
+String MyDomotic::getTopicCmd(String basic_topic)
 {
   // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
   // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
-  return PREFIX_CMD + "/" + (String) arduino_setting.topic + "/" + (String) this->data.id;
+  return PREFIX_CMD + "/" + basic_topic + "/" + (String) this->data.id;
 }
 
 
-String MyDomotic::getTopicStatus(void)
+String MyDomotic::getTopicStatus(String basic_topic)
 {
   // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
   // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
-  return PREFIX_STAT + "/" + (String) arduino_setting.topic + "/" + (String) this->data.id;
+  return PREFIX_STAT + "/" + basic_topic + "/" + (String) this->data.id;
 }
 
 
-String MyDomotic::setObj(void)
+String MyDomotic::setObj(String basic_topic)
 {
   // OGNI INPUT E' VISTO COME UN EVENTO DI PRESSIONE BOTTONE
   // VENGONO PUBBLICATI GLI EVENTI CON IL NUMERO BOTTONE
-  return PREFIX_SET + "/" + (String) arduino_setting.topic + "/" + (String) this->data.id;
+  return PREFIX_SET + "/" + basic_topic + "/" + (String) this->data.id;
 }
 
 
