@@ -33,8 +33,10 @@ struct MyDomoticSetting {
 
 struct CustomPin {
   int   btn;                          //BOTTONE DELL'AZIONE
+  int   type_object;                  //TIPO DI OGGETTO [SWITCH, BLIND, BUTTON*, BLIND2*]
   char  mqtt[5];
-  char  topic[50];
+  char  topic[30];
   int   _eepromAddress;
+  long  _period_state;
 };
 #endif /* MyDomoticCore_h */

@@ -13,6 +13,7 @@
   const int digital_command []  =   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   const int analogic_input []   =   {A0,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12,A13,A14,A15};
   const int custom_input []     =   {15,16,17,18,19,20,21};
+  int custom_command []         =   { 0, 0, 0, 0, 0, 0, 0};
 #elif ARDUINOTYPE == 1024   //ARDUINO UNO
   const String BOARDNAMETYPE    =   "Arduino UNO";
   const char* MQTTTOPICPREFIX   =   "arduino_t";
@@ -25,9 +26,10 @@
   const int digital_command[]   =   {0,0,0,0};
   const int analogic_input []   =   {A0,A1,A2,A3,A4,A5};
   #if ETHERNETSUPPORT == 2
-    const int custom_input []   =   {10,11,12};
-  #else
     const int custom_input []   =   {};
+  #else
+    const int custom_input []   =   {10,11,12};
+    int custom_command []       =   { 0, 0, 0};
   #endif
 #elif ARDUINOTYPE == 512  //ARDUINO NANO
   const String BOARDNAMETYPE    =   "Arduino NANO";
@@ -41,8 +43,9 @@
   const int digital_command[]   =   {0,0,0,0};
   const int analogic_input []   =   {A0,A1,A2,A3,A4,A5};
   #if ETHERNETSUPPORT == 2
-    const int custom_input []   =   {10,11,12};
-  #else
     const int custom_input []   =   {};
+  #else
+    const int custom_input []   =   {10,11,12};
+    int custom_command []       =   { 0, 0, 0};
   #endif
 #endif

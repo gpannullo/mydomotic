@@ -17,6 +17,7 @@ extern const int digital_check [];
 extern const float digital_period [];
 extern const int digital_command [];
 extern const int custom_input [];
+extern const int custom_command [];
 extern const int RESET_TIMEOUT;
 extern const bool WaitTimeOutBeforeReset;
 extern const int RESET_PIN_MODE;
@@ -126,13 +127,15 @@ void set_initial_data()
   }
   for(int i=0; i<count_custom_input; i++){
     CustomPin data_tmp = {
-            custom_input[i],
+            custom_input[i],                          //input btn
+            custom_command[i],                        //type_object
             "","",
-            localeepromAddress,     //_eepromAddress
+            localeepromAddress,                       //_eepromAddress
+            0,                                        //_period_state
           };
     EEPROM.put(localeepromAddress, data_tmp);
     localeepromAddress += sizeof(CustomPin);
-    PrintINFO(".",0,false);
+    PrintINFO("*",0,false);
   }
   PrintINFO("DONE!",1,false);
   PrintINFO("",1,false);
@@ -239,7 +242,7 @@ void load_stored_data()
     EEPROM.get(eepromAddress, data_custom_tmp);
     mydomotic_custom_obj[i]=CustomBtn(data_custom_tmp);
     eepromAddress += sizeof(CustomPin);
-    Serial.print(".");
+    Serial.print("*");
   }
   Serial.println(" done!");
   DPrintln("");

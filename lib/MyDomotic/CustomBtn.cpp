@@ -20,9 +20,15 @@ void CustomBtn::set_setting(CustomPin data) {
 
 void CustomBtn::setup(void)
 {
-  pinMode(this->data.btn, INPUT_PULLUP);
-  this->btn_state = digitalRead(this->data.btn);
-  this->btn_read = this->btn_state;
+  if(this->data.type_object == MYDC_TYPE_MQTT_BTN){
+    pinMode(this->data.btn, INPUT_PULLUP);
+    this->btn_state = digitalRead(this->data.btn);
+    this->btn_read = this->btn_state;
+  }else if(this->data.type_object == MYDC_TYPE_DIGITAL_LEVEL){
+    pinMode(this->data.btn, INPUT_PULLUP);
+    this->btn_state = digitalRead(this->data.btn);
+    this->btn_read = this->btn_state;
+  }
 }
 
 
@@ -45,28 +51,44 @@ void CustomBtn::check_btn_state(void)
   this->btn_state = digitalRead(this->data.btn);
 }
 
+void CustomBtn::check_input(void)
+{
+  this->btn_read = digitalRead(this->data.btn);
+  if (this->btn_state != this->btn_read && this->delayled.isExpired()) {
+    send_status_action=true;
+    this->delayled.start(30000, AsyncDelay::MILLIS); //TIMER PER 10s
+  }
+}
+
 // METODO DI LOOP
 void CustomBtn::loop(void)
 {
-  this->check_btn_state();
+  if(this->data.type_object == MYDC_TYPE_MQTT_BTN)
+  {
+    this->check_btn_state();
+  } else if (this->data.type_object == MYDC_TYPE_DIGITAL_LEVEL)
+  {
+    this->check_input();
+  }
+}
+
+String CustomBtn::to_small_json(void)
+{
+  if (this->data.type_object == MYDC_TYPE_DIGITAL_LEVEL){
+    // CONVERSIONE DETTAGLI SETTINGS OGGETTO IN JSON
+    String state = "CLOSE";
+    if (digitalRead(this->data.btn) == LOW ){
+      state = "OPEN";
+    }
+    return  "\"ST" + (String) this->data.btn + "\":\"" + state + "\"";
+  }else{
+    return "";
+  }
 }
 
 void CustomBtn::action(void)
 {
-  #if ETHERNETSUPPORT == 1 or ETHERNETSUPPORT == 2
-  this->client->publish(this->data.topic, this->data.mqtt);
-  #endif
 }
-
-#if ETHERNETSUPPORT == 1
-  void CustomBtn::mqttset(PubSubClient mqtt){
-    this->client = &mqtt;
-  }
-#elif ETHERNETSUPPORT == 2
-  void CustomBtn::mqttset(ELClientMqtt mqtt){
-    this->client = &mqtt;
-  }
-#endif
 
 // METODO PER CAMBIARE DI STATO UN LED
 void CustomBtn::save() {

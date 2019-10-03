@@ -10,21 +10,15 @@
 #define CustomBtn_h
 
 #include <Arduino.h>
+#include <AsyncDelay.h>
 #include <EEPROM.h>
 #include "MyDomoticCore.h"
 
 extern ArduinoSetting arduino_setting;
+extern bool send_status_action;
 
-#if ETHERNETSUPPORT == 1
-  #include <Ethernet.h>
-  #include <PubSubClient.h>
-  extern const bool NETWORK_ENABLE;
-#elif ETHERNETSUPPORT == 2
-  #include <ELClient.h>
-  #include <ELClientCmd.h>
-  #include <ELClientMqtt.h>
-  #include <ELClientWebServer.h>
-#endif
+const int MYDC_TYPE_DIGITAL_LEVEL   = 1;
+const int MYDC_TYPE_MQTT_BTN        = 2;
 
 class CustomBtn
 {
@@ -32,12 +26,9 @@ private:
     int btn_state;
     int btn_read;
     CustomPin data;
-    #if ETHERNETSUPPORT == 2
-      ELClientMqtt *client;
-    #elif ETHERNETSUPPORT == 1
-      PubSubClient *client;
-    #endif
+    AsyncDelay delayled;
     void check_btn_state(void);
+    void check_input(void);
 
 
 
@@ -49,13 +40,9 @@ public:
     void loop(void);
     void action(void);
     CustomPin get_setting(void);
-    #if ETHERNETSUPPORT == 1
-      void mqttset(PubSubClient mqtt);
-    #elif ETHERNETSUPPORT == 2
-      void mqttset(ELClientMqtt mqtt);
-    #endif
     void set_setting(CustomPin data);
     void save (void);
+    String to_small_json(void);
 };
 
 

@@ -7,6 +7,16 @@
  #define ETHERNETSUPPORT 0
 #endif
 
+#if ETHERNETSUPPORT == 1
+  #include <Ethernet.h>
+  #include <PubSubClient.h>
+#elif ETHERNETSUPPORT == 2
+  #include <ELClient.h>
+  #include <ELClientCmd.h>
+  #include <ELClientMqtt.h>
+  #include <ELClientWebServer.h>
+#endif
+
 #include "command.h"
 #include "platform.h"
 #include "platform_custom.h"
@@ -395,6 +405,12 @@ void getMqttStatus()
   for (int i = 0; i < count_digital_input; i++) {
     status_mydomotic = status_mydomotic + mydomotic_obj[i].to_small_json();
     if(count_digital_input != (i + 1)){
+      status_mydomotic = status_mydomotic + ",";
+    }
+  }
+  for (int i = 0; i < count_custom_input; i++) {
+    status_mydomotic = status_mydomotic + mydomotic_custom_obj[i].to_small_json();
+    if(count_custom_input != (i + 1)){
       status_mydomotic = status_mydomotic + ",";
     }
   }
