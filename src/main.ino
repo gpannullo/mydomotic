@@ -439,6 +439,9 @@ void loop()
   for (int i = 0; i < count_digital_input; i++) {
     mydomotic_obj[i].loop();
   }
+  for (int i = 0; i < count_custom_input; i++) {
+    mydomotic_custom_obj[i].loop();
+  }
   /*
   for (int i = 0; i < count_custom_input; i++) {
     mydomotic_custom_obj[i].loop();
