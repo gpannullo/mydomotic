@@ -77,7 +77,7 @@ void MyDomotic::off(void)
   this->lock();
 }
 
-String MyDomotic::Level2Sting(int led)
+String MyDomotic::Level2String(int led)
 {
   if (SET_CLOSE == led){
     return "OFF";
@@ -213,7 +213,7 @@ String MyDomotic::to_json(void)
 String MyDomotic::to_small_json(void)
 {
   // CONVERSIONE DETTAGLI SETTINGS OGGETTO IN JSON
-  return  "\"BTN" + (String) this->data.id + "\":\"" + Level2Sting(digitalRead(this->data.led[0])) + "\"";
+  return  "\"BTN" + (String) this->data.id + "\":\"" + Level2String(digitalRead(this->data.led[0])) + "\"";
 }
 
 String MyDomotic::get_status(void)

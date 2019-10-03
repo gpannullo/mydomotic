@@ -50,7 +50,7 @@ private:
     void switch2 (void);
     void check_btn_state(void);
     void SetLed(int led, int level);
-    String Level2Sting(int led);
+    String Level2String(int led);
 
 public:
     MyDomotic();
